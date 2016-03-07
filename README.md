@@ -67,32 +67,18 @@ Empty fields are omitted from the response.
 `curl -H "X-Request-Id: 123" localhost:8080/content/3fa70485-3a57-3b9b-9449-774b001cd965/annotations`
 
 ### DELETE
-/content/{contentId}/annotations/{annotationType}/{conceptId}
-
-conceptId here is just the uuid, not the full URI
+/content/{contentId}/annotations/
 
 Deletes all the annotations with the specified platformVersion.
 
-NB: /content/{contentId}/annotations/mentions/{conceptId} is used to allow annotations to be removed in Spyglass (not sure whether this is much used because if the content is republished, we lose the fact an annotation was deleted).
-
-Other paths are only added here for ease of testing.
-
 Will return 204 if successful, 404 if not found
 
-See [this doc](https://docs.google.com/document/d/1cySUlTuSYlv8ANikLlfToezSiRERa0sBdO2eVqy1FXM) for more details.
+`curl -XDELETE -H "X-Request-Id: 123" localhost:8080/3fa70485-3a57-3b9b-9449-774b001cd965/annotations`
 
-`curl -XDELETE -H "X-Request-Id: 123" localhost:8080/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/2e8d937e-935c-3586-9137-eff2bc1cdd8d`
+NB: /content/{contentId}/annotations/mentions/{conceptId} also existed in the old annotations writer and was used to allow annotations to be removed in Spyglass (however it was not used because if the content is republished, we lose the fact an annotation was deleted). We have chosen not to replicate
+that functionality in this app.
 
 
 ## Healthchecks
 * Check connectivity [http://localhost:8080/__health](http://localhost:8080/__health)
 * Ping: [http://localhost:8080/__ping](http://localhost:8080/__ping)
-
-## TODO
-
-### API specific
-* Runbook
-* Update or new API documentation based on original google docs
-
-### Cross cutting concerns
-* Allow service to start if neo4j is unavailable at startup time
