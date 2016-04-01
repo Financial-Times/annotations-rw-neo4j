@@ -1,10 +1,13 @@
 package annotations
 
 import (
-	"fmt"
-	"os"
-	"testing"
+	"encoding/json"
+  "fmt"
+  "os"
+  "testing"
 
+	contrw "github.com/Financial-Times/content-rw-neo4j/content"
+	"github.com/Financial-Times/base-ft-rw-app-go/baseftrwapp"
 	"github.com/Financial-Times/neo-utils-go/neoutils"
 	"github.com/jmcvetta/neoism"
 	"github.com/stretchr/testify/assert"
@@ -13,12 +16,13 @@ import (
 var annotationsDriver service
 
 const (
-	contentUUID       = "32b089d2-2aae-403d-be6e-877404f586cf"
-	conceptUUID       = "412e4ca3-f8d5-4456-8606-064c1dba3c45"
-	secondConceptUUID = "c834adfa-10c9-4748-8a21-c08537172706"
-	oldConceptUUID    = "ad28ddc7-4743-4ed3-9fad-5012b61fb919"
-	brandUUID 				= "8e21cbd4-e94b-497a-a43b-5b2309badeb3"
-	platformVersion   = "v2"
+	contentUUID        = "32b089d2-2aae-403d-be6e-877404f586cf"
+	conceptUUID        = "412e4ca3-f8d5-4456-8606-064c1dba3c45"
+	secondConceptUUID  = "c834adfa-10c9-4748-8a21-c08537172706"
+	oldConceptUUID     = "ad28ddc7-4743-4ed3-9fad-5012b61fb919"
+	fixtureContentUUID = "09405a71-2d4c-4dbc-b6f0-4e2d16d7b797"
+	brandUUID 				 = "dbb0bdae-1f0c-11e4-b0cb-b2227cce2b54"
+	platformVersion    = "v2"
 )
 
 func getURI(uuid string) string {
@@ -141,42 +145,24 @@ func TestWriteDoesNotRemoveExistingIsClassifedByBrandRelationships(t *testing.T)
 
 	annotationsDriver = getAnnotationsService(t)
 
-	defer func() {
-		err := deleteNode(annotationsDriver, contentUUID)
-		assert.NoError(err, "Error trying to delete content node with uuid %s, err=%v", contentUUID, err)
-		err = deleteNode(annotationsDriver, conceptUUID)
-		assert.NoError(err, "Error trying to delete concept node with uuid %s, err=%v", conceptUUID, err)
-		err = deleteNode(annotationsDriver, brandUUID)
-		assert.NoError(err, "Error trying to delete brand node with uuid %s, err=%v", brandUUID, err)
-	}()
+	db := getDatabaseConnectionAndCheckClean(t, assert)
+	batchRunner := neoutils.NewBatchCypherRunner(neoutils.StringerDb{db}, 1)
+	writeContent(assert, db, &batchRunner)
 
-	createBrandQuery := &neoism.CypherQuery{
-		Statement: `MERGE (b:Brand{uuid:{brandUuid}}) SET b :Concept:Thing RETURN b.uuid`,
+	result2 := []struct {
+		Uuid string `json:"n.uuid"`
+	}{}
+
+	getContent2Query := &neoism.CypherQuery{
+		Statement: `MATCH (n:Thing {uuid:{contentUuid}}) RETURN n.uuid`,
 		Parameters: map[string]interface{}{
-			"brandUuid": brandUUID,
+			"contentUuid": fixtureContentUUID,
 		},
+		Result: &result2,
 	}
 
-	annotationsDriver.cypherRunner.CypherBatch([]*neoism.CypherQuery{createBrandQuery})
-
-	createContentQuery := &neoism.CypherQuery{
-		Statement: `MERGE (c:Content{uuid:{contentUuid}}) SET c :Thing RETURN c.uuid`,
-		Parameters: map[string]interface{}{
-			"contentUuid": contentUUID,
-		},
-	}
-
-	annotationsDriver.cypherRunner.CypherBatch([]*neoism.CypherQuery{createContentQuery})
-
-	contentQuery := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}}) MATCH (b:Brand{uuid:{brandUuid}}) CREATE (n)-[rel:IS_CLASSIFIED_BY{platformVersion:"v2"}]->(b) RETURN rel.platformVersion`,
-		Parameters: map[string]interface{}{
-			"contentUuid": contentUUID,
-			"brandUuid": brandUUID,
-		},
-	}
-
-	err := annotationsDriver.cypherRunner.CypherBatch([]*neoism.CypherQuery{contentQuery})
+	annotationsDriver.cypherRunner.CypherBatch([]*neoism.CypherQuery{getContent2Query})
+	fmt.Println(result2)
 
 	annotationsToWrite := annotations{annotation{
 		Thing: thing{ID: getURI(conceptUUID),
@@ -198,10 +184,11 @@ func TestWriteDoesNotRemoveExistingIsClassifedByBrandRelationships(t *testing.T)
 		},
 	}}
 
-	assert.NoError(annotationsDriver.Write(contentUUID, annotationsToWrite), "Failed to write annotation")
-	found, err := annotationsDriver.Delete(contentUUID)
-	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
-	assert.NoError(err, "Error deleting annotations for content uuid %s", contentUUID)
+	assert.NoError(annotationsDriver.Write(fixtureContentUUID, annotationsToWrite), "Failed to write annotation")
+
+	found, err := annotationsDriver.Delete(fixtureContentUUID)
+	assert.True(found, "Didn't manage to delete annotations for content uuid %s", fixtureContentUUID)
+	assert.NoError(err, "Error deleting annotations for content uuid %s", fixtureContentUUID)
 
 	result := []struct {
 		Uuid string `json:"b.uuid"`
@@ -210,7 +197,7 @@ func TestWriteDoesNotRemoveExistingIsClassifedByBrandRelationships(t *testing.T)
 	getContentQuery := &neoism.CypherQuery{
 		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[:IS_CLASSIFIED_BY]->(b:Brand) RETURN b.uuid`,
 		Parameters: map[string]interface{}{
-			"contentUuid": contentUUID,
+			"contentUuid": fixtureContentUUID,
 			"brandUuid": brandUUID,
 		},
 		Result: &result,
@@ -231,6 +218,8 @@ func TestWriteDoesNotRemoveExistingIsClassifedByBrandRelationships(t *testing.T)
 	}
 
 	annotationsDriver.cypherRunner.CypherBatch([]*neoism.CypherQuery{removeRelationshipQuery})
+
+	cleanDB(db, t, assert)
 }
 
 func TestWriteAndReadMultipleAnnotations(t *testing.T) {
@@ -504,6 +493,59 @@ func checkNodeIsStillPresent(uuid string, t *testing.T) {
 	assert.True(len(results) == 1, "Didn't find a node")
 	assert.Equal(uuid, results[0].UUID, "Did not find correct node")
 }
+
+func writeContent(assert *assert.Assertions, db *neoism.Database, batchRunner *neoutils.CypherRunner) contrw.CypherDriver {
+	contentRW := contrw.NewCypherDriver(*batchRunner, db)
+	assert.NoError(contentRW.Initialise())
+	writeJSONToContentService(contentRW, "../fixtures/Content-09405a71-2d4c-4dbc-b6f0-4e2d16d7b797.json", assert)
+	return contentRW
+}
+
+func deleteContent(contentRW contrw.CypherDriver) {
+	contentRW.Delete(contentUUID)
+}
+
+func getDatabaseConnectionAndCheckClean(t *testing.T, assert *assert.Assertions) *neoism.Database {
+	db := getDatabaseConnection(t, assert)
+	cleanDB(db, t, assert)
+	return db
+}
+
+func getDatabaseConnection(t *testing.T, assert *assert.Assertions) *neoism.Database {
+	url := os.Getenv("NEO4J_TEST_URL")
+	if url == "" {
+		url = "http://localhost:7474/db/data"
+	}
+
+	db, err := neoism.Connect(url)
+	assert.NoError(err, "Failed to connect to Neo4j")
+	return db
+}
+
+func cleanDB(db *neoism.Database, t *testing.T, assert *assert.Assertions) {
+	uuids := []string{
+		fixtureContentUUID,
+	}
+
+	qs := make([]*neoism.CypherQuery, len(uuids))
+	for i, uuid := range uuids {
+		qs[i] = &neoism.CypherQuery{
+			Statement: fmt.Sprintf("MATCH (a:Thing {uuid: '%s'}) DETACH DELETE a", uuid)}
+	}
+	err := db.CypherBatch(qs)
+	assert.NoError(err)
+}
+
+func writeJSONToContentService(service baseftrwapp.Service, pathToJSONFile string, assert *assert.Assertions) {
+	f, err := os.Open(pathToJSONFile)
+	assert.NoError(err)
+	dec := json.NewDecoder(f)
+	inst, _, errr := service.DecodeJSON(dec)
+	assert.NoError(errr, "Error parsing file %s", pathToJSONFile)
+	errrr := service.Write(inst)
+	assert.NoError(errrr)
+}
+
 
 func cleanUp(t *testing.T, contentUUID string, conceptUUIDs []string) {
 	assert := assert.New(t)
