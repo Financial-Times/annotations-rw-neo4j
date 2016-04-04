@@ -149,20 +149,14 @@ func TestWriteDoesNotRemoveExistingIsClassifedByBrandRelationships(t *testing.T)
 	batchRunner := neoutils.NewBatchCypherRunner(neoutils.StringerDb{db}, 1)
 	writeContent(assert, db, &batchRunner)
 
-	result2 := []struct {
-		Uuid string `json:"n.uuid"`
-	}{}
-
 	getContent2Query := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}}) RETURN n.uuid`,
+		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[a]->(b:Thing) RETURN b.uuid`,
 		Parameters: map[string]interface{}{
 			"contentUuid": fixtureContentUUID,
 		},
-		Result: &result2,
 	}
 
 	annotationsDriver.cypherRunner.CypherBatch([]*neoism.CypherQuery{getContent2Query})
-	fmt.Println(result2)
 
 	annotationsToWrite := annotations{annotation{
 		Thing: thing{ID: getURI(conceptUUID),
@@ -195,7 +189,7 @@ func TestWriteDoesNotRemoveExistingIsClassifedByBrandRelationships(t *testing.T)
 	}{}
 
 	getContentQuery := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[:IS_CLASSIFIED_BY]->(b:Brand) RETURN b.uuid`,
+		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[:IS_CLASSIFIED_BY]->(b:Thing) RETURN b.uuid`,
 		Parameters: map[string]interface{}{
 			"contentUuid": fixtureContentUUID,
 			"brandUuid": brandUUID,
@@ -525,6 +519,7 @@ func getDatabaseConnection(t *testing.T, assert *assert.Assertions) *neoism.Data
 func cleanDB(db *neoism.Database, t *testing.T, assert *assert.Assertions) {
 	uuids := []string{
 		fixtureContentUUID,
+		conceptUUID,
 	}
 
 	qs := make([]*neoism.CypherQuery, len(uuids))
