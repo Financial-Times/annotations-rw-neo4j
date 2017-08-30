@@ -21,9 +21,11 @@ _NB You will need to tag a commit in order to build, since the UI asks for a tag
 * `go build .`
 
 ## Running locally
+
 * `govendor test -v -race`
 * `go install`
 * `$GOPATH/bin/annotations-rw-neo4j [--help]`
+*  you will need a local neo4j and kafka running or you can disable the functionality that requires kafka by setting the env var `SHOULD_FORWARD_MESSAGES=false`
 
 ## Endpoints
 
