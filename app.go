@@ -171,8 +171,10 @@ func setupAnnotationsService(neoURL string, bathSize int) annotations.Service {
 	if err != nil {
 		log.Fatalf("Error connecting to neo4j %s", err)
 	}
+	annotationsService:=annotations.NewCypherAnnotationsService(db)
+	annotationsService.Initialise()
 
-	return annotations.NewCypherAnnotationsService(db)
+	return annotationsService
 }
 
 func setupMessageProducer(brokerAddress string, producerTopic string) kafka.Producer {
