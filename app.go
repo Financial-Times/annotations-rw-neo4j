@@ -172,7 +172,10 @@ func setupAnnotationsService(neoURL string, bathSize int) annotations.Service {
 		log.Fatalf("Error connecting to neo4j %s", err)
 	}
 	annotationsService:=annotations.NewCypherAnnotationsService(db)
-	annotationsService.Initialise()
+	 err = annotationsService.Initialise()
+	if err!=nil{
+		log.Errorf("annotations service has not been initalised correctly %s", err)
+	}
 
 	return annotationsService
 }

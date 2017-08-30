@@ -43,7 +43,6 @@ func TestConstraintsApplied(t *testing.T){
 			"contentUuid":     contentUUID,
 		},
 	}
-
 	err := annotationsDriver.conn.CypherBatch([]*neoism.CypherQuery{testSetupQuery})
 	assert.NoError(err,"Error setting up Test data")
 	testQuery := &neoism.CypherQuery{
