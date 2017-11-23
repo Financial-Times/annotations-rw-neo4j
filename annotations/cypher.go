@@ -42,9 +42,19 @@ const (
 	brightcoveAnnotationLifecycle = "annotations-brightcove"
 )
 
+
+
 //NewCypherAnnotationsService instantiate driver
 func NewCypherAnnotationsService(cypherRunner neoutils.NeoConnection) service {
 	return service{cypherRunner}
+}
+
+
+func (cas service) Initialise() error {
+
+	return cas.conn.EnsureConstraints(map[string]string{
+		"Thing":             "uuid",
+		})
 }
 
 // DecodeJSON decodes to a list of annotations, for ease of use this is a struct itself
@@ -172,15 +182,13 @@ func (s service) Count(annotationLifecycle string, platformVersion string) (int,
 	return results[0].Count, nil
 }
 
-func (s service) Initialise() error {
-	return nil // No constraints need to be set up
-}
 
 func createAnnotationRelationship(relation string) (statement string) {
 	stmt := `
-                MERGE (content:Thing{uuid:{contentID}})
+	 			MERGE (content:Thing{uuid:{contentID}})
                 MERGE (upp:Identifier:UPPIdentifier{value:{conceptID}})
-                MERGE (upp)-[:IDENTIFIES]->(concept:Thing) ON CREATE SET concept.uuid = {conceptID}
+                MERGE (concept:Thing{uuid: {conceptID}})
+                MERGE (upp)-[:IDENTIFIES]->(concept)
                 MERGE (content)-[pred:%s {lifecycle:{annotationLifecycle}}]->(concept)
                 SET pred={annProps}
           `

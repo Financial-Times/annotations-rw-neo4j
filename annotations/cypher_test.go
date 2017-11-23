@@ -35,6 +35,33 @@ func getURI(uuid string) string {
 	return fmt.Sprintf("http://api.ft.com/things/%s", uuid)
 }
 
+func TestConstraintsApplied(t *testing.T) {
+	assert := assert.New(t)
+	annotationsDriver = getAnnotationsService(t)
+	defer cleanDB(t, assert)
+
+	err := annotationsDriver.Initialise()
+	assert.NoError(err)
+
+	testSetupQuery := &neoism.CypherQuery{
+		Statement: `MERGE (n:Thing {uuid:{contentUuid}}) SET n :Thing`,
+		Parameters: map[string]interface{}{
+			"contentUuid": contentUUID,
+		},
+	}
+
+	err = annotationsDriver.conn.CypherBatch([]*neoism.CypherQuery{testSetupQuery})
+	assert.NoError(err, "Error setting up Test data")
+	testQuery := &neoism.CypherQuery{
+		Statement: `CREATE (n:Thing {uuid:{contentUuid}}) SET n :Thing`,
+		Parameters: map[string]interface{}{
+			"contentUuid": contentUUID,
+		},
+	}
+	expectErr := annotationsDriver.conn.CypherBatch([]*neoism.CypherQuery{testQuery})
+	assert.Error(expectErr, "DB constraint is not applied correctly")
+}
+
 func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 	assert := assert.New(t)
 	logger.InitDefaultLogger("annotations-rw")
