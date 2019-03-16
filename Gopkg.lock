@@ -183,6 +183,17 @@
   revision = "2bb1b664bcff821e02b2a0644cd29c7e824d54f8"
 
 [[projects]]
+  digest = "1:1f4b55d7c57681ad91b7ce3ac7c8e7b139e6dd2f477c5f87e6a7749d298645dc"
+  name = "github.com/joho/godotenv"
+  packages = [
+    ".",
+    "autoload",
+  ]
+  pruneopts = "UT"
+  revision = "23d116af351c84513e1946b527c88823e476be13"
+  version = "v1.3.0"
+
+[[projects]]
   branch = "master"
   digest = "1:f44d34fda864bed6d6c71514cd40b2ee097e6e67f745d5d014113e1faa5af8b7"
   name = "github.com/konsorten/go-windows-terminal-sequences"
@@ -361,6 +372,7 @@
     "github.com/gorilla/mux",
     "github.com/jawher/mow.cli",
     "github.com/jmcvetta/neoism",
+    "github.com/joho/godotenv/autoload",
     "github.com/pkg/errors",
     "github.com/rcrowley/go-metrics",
     "github.com/stretchr/testify/assert",

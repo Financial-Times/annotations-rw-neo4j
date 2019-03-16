@@ -148,6 +148,7 @@ func (s service) Write(contentUUID string, annotationLifecycle string, platformV
 	logger.WithTransactionID(tid).WithUUID(contentUUID).Debugf("Writing statements to neo4j: %v", statements)
 	if err := s.conn.CypherBatch(queries); err != nil {
 		logger.WithError(err).WithTransactionID(tid).WithUUID(contentUUID).Error("Error executing write queries in neo4j!")
+		return err
 	}
 	return nil
 }
@@ -195,8 +196,7 @@ func (s service) Initialise() error {
 func createAnnotationRelationship(relation string) (statement string) {
 	stmt := `
                 MERGE (content:Thing{uuid:{contentID}})
-                MERGE (upp:Identifier:UPPIdentifier{value:{conceptID}})
-                MERGE (upp)-[:IDENTIFIES]->(concept:Thing) ON CREATE SET concept.uuid = {conceptID}
+                MERGE (concept:Thing{uuid:{conceptID}})
                 MERGE (content)-[pred:%s {lifecycle:{annotationLifecycle}}]->(concept)
                 SET pred={annProps}
           `

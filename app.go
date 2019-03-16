@@ -21,6 +21,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jawher/mow.cli"
 	"github.com/rcrowley/go-metrics"
+
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
