@@ -43,7 +43,7 @@ const (
 )
 
 //NewCypherAnnotationsService instantiate driver
-func NewCypherAnnotationsService(cypherRunner neoutils.NeoConnection) service {
+func NewCypherAnnotationsService(cypherRunner neoutils.NeoConnection) Service {
 	return service{cypherRunner}
 }
 
@@ -116,9 +116,14 @@ func (s service) Delete(contentUUID string, tid string, annotationLifecycle stri
 //Write a set of annotations associated with a piece of content. Any annotations
 //already there will be removed
 func (s service) Write(contentUUID string, annotationLifecycle string, platformVersion string, tid string, thing interface{}) error {
-	annotationsToWrite := thing.(Annotations)
+	annotationsToWrite, ok := thing.(Annotations)
+	if ok == false {
+		err := fmt.Errorf("thing is not of type Annotations")
+		logger.WithTransactionID(tid).WithUUID(contentUUID).Error(err.Error())
+		return err
+	}
 	if contentUUID == "" {
-		err := fmt.Errorf("Content uuid is required")
+		err := fmt.Errorf("content uuid is required")
 		logger.WithTransactionID(tid).WithUUID(contentUUID).Error(err.Error())
 		return err
 	}
@@ -296,7 +301,7 @@ func extractUUIDFromURI(uri string) (string, error) {
 	if len(result) == 2 {
 		return result[1], nil
 	}
-	return "", fmt.Errorf("Couldn't extract uuid from uri %s", uri)
+	return "", fmt.Errorf("couldn't extract uuid from uri %s", uri)
 }
 
 func convertAnnotatedDateToEpoch(annotatedDateString string) (int64, error) {

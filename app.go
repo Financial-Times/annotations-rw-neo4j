@@ -164,7 +164,6 @@ func setupAnnotationsService(neoURL string, bathSize int) annotations.Service {
 	}
 
 	return annotations.NewCypherAnnotationsService(db)
-	return annotationsService
 }
 
 func setupMessageProducer(brokerAddress string, producerTopic string) kafka.Producer {
