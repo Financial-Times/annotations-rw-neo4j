@@ -43,7 +43,7 @@ const (
 )
 
 //NewCypherAnnotationsService instantiate driver
-func NewCypherAnnotationsService(cypherRunner neoutils.NeoConnection) Service {
+func NewCypherAnnotationsService(cypherRunner neoutils.NeoConnection) service {
 	return service{cypherRunner}
 }
 
