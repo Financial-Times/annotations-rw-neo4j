@@ -1,9 +1,0 @@
-# Values used for the deployed application.
-replicaCount: 2
-service:
-  name: suggestions-rw-neo4j
-env:
-  SHOULD_CONSUME_MESSAGES: false
-  SHOULD_FORWARD_MESSAGES: true
-  PRODUCER_TOPIC: PostConceptSuggestions
-  LIFECYCLE_CONFIG_PATH: suggestion-config.json
