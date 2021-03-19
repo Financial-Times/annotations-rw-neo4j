@@ -1,3 +1,7 @@
+<!--
+    Written in the format prescribed by https://github.com/Financial-Times/runbook.md.
+    Any future edits should abide by this format.
+-->
 # UPP - Suggestions RW Neo4j
 
 Suggestions RW is a service and an API for reading/writing annotations into Neo4j with lifecycle=annotations-v2
@@ -18,22 +22,6 @@ Platinum
 
 Production
 
-## Delivered By
-
-content
-
-## Supported By
-
-content
-
-## Known About By
-
-- elitsa.pavlova
-- kalin.arsov
-- miroslav.gatsanoga
-- ivan.nikolov
-- marina.chompalova
-
 ## Host Platform
 
 AWS
@@ -50,10 +38,19 @@ No
 
 No
 
-## Dependencies
+<!-- Placeholder - remove HTML comment markers to activate
+## Can Download Personal Data
+Choose Yes or No
 
-- upp-kafka
-- upp-neo4j-cluster
+...or delete this placeholder if not applicable to this system
+-->
+
+<!-- Placeholder - remove HTML comment markers to activate
+## Can Contact Individuals
+Choose Yes or No
+
+...or delete this placeholder if not applicable to this system
+-->
 
 ## Failover Architecture Type
 
@@ -70,7 +67,7 @@ FullyAutomated
 ## Failover Details
 
 The service is deployed in both Delivery clusters. The failover guide for the cluster is located here:
-https://github.com/Financial-Times/upp-docs/tree/master/failover-guides/delivery-cluster
+<https://github.com/Financial-Times/upp-docs/tree/master/failover-guides/delivery-cluster>
 
 ## Data Recovery Process Type
 
@@ -92,6 +89,14 @@ Manual
 
 If the new release does not change the way kafka messages are consumed and/or produce it's safe to deploy it without cluster failover.
 
+<!-- Placeholder - remove HTML comment markers to activate
+## Heroku Pipeline Name
+Enter descriptive text satisfying the following:
+This is the name of the Heroku pipeline for this system. If you don't have a pipeline, this is the name of the app in Heroku. A pipeline is a group of Heroku apps that share the same codebase where each app in a pipeline represents the different stages in a continuous delivery workflow, i.e. staging, production.
+
+...or delete this placeholder if not applicable to this system
+-->
+
 ## Key Management Process Type
 
 Manual
@@ -105,12 +110,12 @@ To rotate credentials you need to login to a particular cluster and update varni
 
 Service in UPP K8S delivery clusters:
 
-- Delivery-Prod-EU health: https://upp-prod-delivery-eu.upp.ft.com/__health/__pods-health?service-name=suggestions-rw-neo4j
-- Delivery-Prod-US health: https://upp-prod-delivery-us.upp.ft.com/__health/__pods-health?service-name=suggestions-rw-neo4j
+*   Delivery-Prod-EU health: <https://upp-prod-delivery-eu.upp.ft.com/__health/__pods-health?service-name=suggestions-rw-neo4j>
+*   Delivery-Prod-US health: <https://upp-prod-delivery-us.upp.ft.com/__health/__pods-health?service-name=suggestions-rw-neo4j>
 
 ## First Line Troubleshooting
 
-https://github.com/Financial-Times/upp-docs/tree/master/guides/ops/first-line-troubleshooting
+<https://github.com/Financial-Times/upp-docs/tree/master/guides/ops/first-line-troubleshooting>
 
 ## Second Line Troubleshooting
 
