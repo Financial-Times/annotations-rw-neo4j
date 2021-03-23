@@ -20,7 +20,9 @@ var (
 				"http://www.ft.com/ontology/organisation/Organisation",
 				"http://www.ft.com/ontology/core/Thing",
 				"http://www.ft.com/ontology/concept/Concept",
-			}},
+			},
+			Predicate: "mentions",
+		},
 		Provenances: []Provenance{
 			{
 				Scores: []Score{
@@ -192,7 +194,9 @@ func exampleConcept(uuid string) Annotation {
 				"http://www.ft.com/ontology/organisation/Organisation",
 				"http://www.ft.com/ontology/core/Thing",
 				"http://www.ft.com/ontology/concept/Concept",
-			}},
+			},
+			Predicate: "mentions",
+		},
 		Provenances: []Provenance{
 			{
 				Scores: []Score{

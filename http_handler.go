@@ -189,7 +189,7 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 	err = hh.annotationsService.Write(uuid, lifecycle, platformVersion, tid, anns)
 	if err == annotations.UnsupportedPredicateErr {
 		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("invalid predicate provided")
-		writeJSONError(w, "Please provide a valid predicate, or leave blank for the default predicate (MENTIONS)", http.StatusBadRequest)
+		writeJSONError(w, "Please provide a valid predicate", http.StatusBadRequest)
 		return
 	}
 
