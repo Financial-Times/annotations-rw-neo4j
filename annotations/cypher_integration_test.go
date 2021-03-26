@@ -413,8 +413,6 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 	contentQuery := &neoism.CypherQuery{
 		Statement: `CREATE (n:Thing {uuid:{contentUuid}})
 		 	    CREATE (a:Thing{uuid:{conceptUuid}})
-		 	    CREATE (upp:Identifier:UPPIdentifier{value:{conceptUuid}})
-                	    MERGE (upp)-[:IDENTIFIES]->(a)
 			    CREATE (n)-[rel:MENTIONS{platformVersion:{platformVersion}, lifecycle:{lifecycle}}]->(a)`,
 		Parameters: map[string]interface{}{
 			"contentUuid":     contentUUID,
@@ -583,12 +581,6 @@ func cleanDB(t *testing.T, assert *assert.Assertions) {
 			},
 		},
 		{
-			Statement: "MATCH (fc:Identifier {value: {conceptUUID}}) DETACH DELETE fc",
-			Parameters: map[string]interface{}{
-				"conceptUUID": conceptUUID,
-			},
-		},
-		{
 			Statement: "MATCH (fc:Thing {uuid: {conceptUUID}}) DETACH DELETE fc",
 			Parameters: map[string]interface{}{
 				"conceptUUID": conceptUUID,
@@ -623,8 +615,7 @@ func deleteNode(conn neoutils.NeoConnection, uuid string) error {
 	query := &neoism.CypherQuery{
 		Statement: `
 			MATCH (p:Thing {uuid: {uuid}})
-			OPTIONAL MATCH (identifier:UPPIdentifier)-[rel:IDENTIFIES]->(p)
-			DELETE identifier, rel, p
+			DELETE p
 		`,
 		Parameters: map[string]interface{}{
 			"uuid": uuid,
