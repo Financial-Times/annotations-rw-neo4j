@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +15,6 @@ import (
 	transactionidutils "github.com/Financial-Times/transactionid-utils-go"
 
 	"github.com/gorilla/mux"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -187,7 +187,7 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 
 	tid := transactionidutils.GetTransactionIDFromRequest(r)
 	err = hh.annotationsService.Write(uuid, lifecycle, platformVersion, tid, anns)
-	if err == annotations.UnsupportedPredicateErr {
+	if errors.Is(err, annotations.UnsupportedPredicateErr) {
 		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("invalid predicate provided")
 		writeJSONError(w, "Please provide a valid predicate", http.StatusBadRequest)
 		return
