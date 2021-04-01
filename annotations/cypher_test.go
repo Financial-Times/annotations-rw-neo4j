@@ -1,6 +1,7 @@
 package annotations
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -99,6 +100,16 @@ func TestCreateAnnotationQueryWithPredicate(t *testing.T) {
 	}
 }
 
+func TestCreateAnnotationQueryWithoutPredicate(t *testing.T) {
+	assert := assert.New(t)
+	logger.InitDefaultLogger("annotations-rw")
+	annotation := exampleConcept(oldConceptUUID)
+	annotation.Thing.Predicate = ""
+
+	_, err := createAnnotationQuery(contentUUID, annotation, v2PlatformVersion, v2AnnotationLifecycle)
+	assert.True(errors.Is(err, UnsupportedPredicateErr), "Creating annotation without predicate is not allowed.")
+}
+
 func TestGetRelationshipFromPredicate(t *testing.T) {
 	var tests = []struct {
 		predicate    string
@@ -106,9 +117,13 @@ func TestGetRelationshipFromPredicate(t *testing.T) {
 	}{
 		{"mentions", "MENTIONS"},
 		{"isClassifiedBy", "IS_CLASSIFIED_BY"},
-		{"", "MENTIONS"},
+		{"implicitlyClassifiedBy", "IMPLICITLY_CLASSIFIED_BY"},
 		{"about", "ABOUT"},
+		{"isPrimarilyClassifiedBy", "IS_PRIMARILY_CLASSIFIED_BY"},
+		{"majorMentions", "MAJOR_MENTIONS"},
 		{"hasAuthor", "HAS_AUTHOR"},
+		{"hasContributor", "HAS_CONTRIBUTOR"},
+		{"hasDisplayTag", "HAS_DISPLAY_TAG"},
 		{"hasBrand", "HAS_BRAND"},
 	}
 

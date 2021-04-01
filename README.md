@@ -50,7 +50,7 @@ Command line options:
 /content/{annotatedContentId}/annotations/{annotations-lifecycle}
 
 Each annotation is added with a relationship according to the predicate property from the payload.
-If that is empty: a default MENTIONS relationship will be added between the content and a concept.
+The predicate property is required and it's value has to be equal to one of the keys from the `relations` map in annotations/model.go
 
 This operation acts as a replace - all existing annotations are removed, and the new ones are created - for the specified annotations-lifecycle.
 Supplying an empty list as the request body will remove all annotations for the content.

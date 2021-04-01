@@ -372,6 +372,7 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 					"http://www.ft.com/ontology/core/Thing",
 					"http://www.ft.com/ontology/concept/Concept",
 				},
+				Predicate: "mentions",
 			},
 			Provenances: []Provenance{
 				{

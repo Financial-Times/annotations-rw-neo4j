@@ -191,10 +191,6 @@ func createAnnotationRelationship(relation string) (statement string) {
 }
 
 func getRelationshipFromPredicate(predicate string) (string, error) {
-	if predicate == "" {
-		return relations["mentions"], nil
-	}
-
 	r, ok := relations[predicate]
 	if !ok {
 		return "", UnsupportedPredicateErr
