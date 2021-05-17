@@ -22,8 +22,8 @@ import (
 
 const (
 	knownUUID           = "12345"
-	annotationLifecycle = "annotations-v1"
-	platformVersion     = "v1"
+	annotationLifecycle = "annotations-pac"
+	platformVersion     = "pac"
 )
 
 type HttpHandlerTestSuite struct {
@@ -66,7 +66,7 @@ func TestHttpHandlerTestSuite(t *testing.T) {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_Success() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.tid, suite.annotations).Return(nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/methode-web-pub", platformVersion, knownUUID, suite.annotations).Return(nil).Once()
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", platformVersion, knownUUID, suite.annotations).Return(nil).Once()
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -125,7 +125,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_InvalidPredicate() {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_ForwardingFailed() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.tid, suite.annotations).Return(nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/methode-web-pub", platformVersion, knownUUID, suite.annotations).Return(errors.New("forwarding failed"))
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", platformVersion, knownUUID, suite.annotations).Return(errors.New("forwarding failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -160,6 +160,13 @@ func (suite *HttpHandlerTestSuite) TestGetHandler_ReadError() {
 	rec := httptest.NewRecorder()
 	router(&httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}, &suite.healthCheckHandler, suite.log).ServeHTTP(rec, request)
 	assert.True(suite.T(), http.StatusServiceUnavailable == rec.Code, fmt.Sprintf("Wrong response code, was %d, should be %d", rec.Code, http.StatusServiceUnavailable))
+}
+
+func (suite *HttpHandlerTestSuite) TestGetHandler_InvalidLifecycle() {
+	request := newRequest("GET", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, "annotations-invalid"), "application/json", nil)
+	rec := httptest.NewRecorder()
+	router(&httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}, &suite.healthCheckHandler, suite.log).ServeHTTP(rec, request)
+	assert.True(suite.T(), http.StatusBadRequest == rec.Code, fmt.Sprintf("Wrong response code, was %d, should be %d", rec.Code, http.StatusBadRequest))
 }
 
 func (suite *HttpHandlerTestSuite) TestDeleteHandler_Success() {

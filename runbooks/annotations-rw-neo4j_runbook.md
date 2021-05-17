@@ -28,7 +28,7 @@ AWS
 
 ## Architecture
 
-Annotations RW reads messages from the ConceptAnnotations queue, generates annotations in the graph database (Neo4j) and forwards them on to the PostConceptAnnotations queue. The Annotation Writer owns all annotations that are linked to a piece of content that are written with lifecycle=annotations-v1, annotations-next-video or annotations-pac.
+Annotations RW reads messages from the ConceptAnnotations queue, generates annotations in the graph database (Neo4j) and forwards them on to the PostConceptAnnotations queue. The Annotation Writer owns all annotations that are linked to a piece of content that are written with lifecycle=annotations-next-video or annotations-pac.
 
 ## Contains Personal Data
 

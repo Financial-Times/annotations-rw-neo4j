@@ -124,13 +124,11 @@ func (s service) Write(contentUUID string, annotationLifecycle string, platformV
 
 	queries := append([]*neoism.CypherQuery{}, buildDeleteQuery(contentUUID, annotationLifecycle, false))
 
-	var statements []string
 	for _, annotationToWrite := range annotationsToWrite {
 		query, err := createAnnotationQuery(contentUUID, annotationToWrite, platformVersion, annotationLifecycle)
 		if err != nil {
 			return fmt.Errorf("create annotation query failed: %w", err)
 		}
-		statements = append(statements, query.Statement)
 		queries = append(queries, query)
 	}
 
