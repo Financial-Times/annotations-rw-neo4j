@@ -1,12 +1,10 @@
 {
   "originMap": {
-    "http://cmdb.ft.com/systems/methode-web-pub": "annotations-v1",
     "http://cmdb.ft.com/systems/next-video-editor": "annotations-next-video",
     "http://cmdb.ft.com/systems/pac": "annotations-pac"
   },
   "lifecycleMap": {
     "annotations-next-video": "next-video",
-    "annotations-v1": "v1",
     "annotations-pac": "pac"
   },
   "messageType": "Annotations"

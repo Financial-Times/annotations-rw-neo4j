@@ -67,7 +67,7 @@ See [this doc](https://docs.google.com/document/d/1FE-JZDYJlKsxOIuQQkPwyyzcOkJQn
 
 Example:
 
-    curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" localhost:8080/content/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/annotations-v1 --data
+    curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" localhost:8080/content/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/annotations-pac --data
     "@annotations/examplePutBody.json"
 
 NB: Although provenances are supplied is a list, we don't expect to get more than one provenance: we will take the scores from that one
@@ -83,7 +83,7 @@ This internal read should return what got written (i.e., this isn't the public a
 If not found, you'll get a 404 response.
 
 Empty fields are omitted from the response.
-`curl -H "X-Request-Id: 123" localhost:8080/content/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/annotations-v1`
+`curl -H "X-Request-Id: 123" localhost:8080/content/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/annotations-pac`
 
 ### DELETE
 /content/{contentId}/annotations/{annotations-lifecycle}
@@ -92,7 +92,7 @@ Deletes all the annotations with the specified annotations-lifecycle.
 
 Will return 204 if successful, 404 if not found
 
-`curl -XDELETE -H "X-Request-Id: 123" localhost:8080/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/annotations-v1`
+`curl -XDELETE -H "X-Request-Id: 123" localhost:8080/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/annotations-pac`
 
 NB: /content/{contentId}/annotations/mentions/{conceptId} also existed in the old annotations writer and was used to allow annotations to be removed in Spyglass (however it was not used because if the content is republished, we lose the fact an annotation was deleted). We have chosen not to replicate
 that functionality in this app.

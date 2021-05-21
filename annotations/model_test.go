@@ -17,13 +17,3 @@ func TestUnMarshallingAnnotation(t *testing.T) {
 	err = json.Unmarshal([]byte(jason), &annotations)
 	assert.NoError(err, "Unexpected error")
 }
-
-func TestUnMarshallingAnnotationWithPredicate(t *testing.T) {
-	assert := assert.New(t)
-	annotations := Annotations{}
-	jason, err := ioutil.ReadFile("examplePutBodyWithPredicate.json")
-	assert.NoError(err, "Unexpected error")
-
-	err = json.Unmarshal([]byte(jason), &annotations)
-	assert.NoError(err, "Unexpected error")
-}

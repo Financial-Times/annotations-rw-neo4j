@@ -17,10 +17,10 @@ var annotationsService Service
 
 const (
 	brandUUID                = "8e21cbd4-e94b-497a-a43b-5b2309badeb3"
-	v1PlatformVersion        = "v1"
+	PACPlatformVersion       = "pac"
 	nextVideoPlatformVersion = "next-video"
 	contentLifecycle         = "content"
-	v1AnnotationLifecycle    = "annotations-v1"
+	PACAnnotationLifecycle   = "annotations-pac"
 	tid                      = "transaction_id"
 )
 
@@ -252,7 +252,7 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLi
 	assert.NotEmpty(result)
 }
 
-func TestWriteDoesRemoveExistingIsClassifiedForV1TermsAndTheirRelationships(t *testing.T) {
+func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *testing.T) {
 	assert := assert.New(t)
 	logger.InitDefaultLogger("annotations-rw")
 
@@ -274,7 +274,7 @@ func TestWriteDoesRemoveExistingIsClassifiedForV1TermsAndTheirRelationships(t *t
 		 	    MERGE (a:Thing{uuid:{conceptUUID}})
 			    CREATE (n)-[rel1:MENTIONS{lifecycle:"annotations-v2"}]->(a)
 			    MERGE (b:Thing{uuid:{secondConceptUUID}})
-			    CREATE (n)-[rel2:IS_CLASSIFIED_BY{lifecycle:"annotations-v1"}]->(b)`,
+			    CREATE (n)-[rel2:IS_CLASSIFIED_BY{lifecycle:"annotations-pac"}]->(b)`,
 		Parameters: map[string]interface{}{
 			"contentUuid":       contentUUID,
 			"conceptUUID":       conceptUUID,
@@ -284,8 +284,8 @@ func TestWriteDoesRemoveExistingIsClassifiedForV1TermsAndTheirRelationships(t *t
 
 	assert.NoError(conn.CypherBatch([]*neoism.CypherQuery{contentQuery}))
 
-	assert.NoError(annotationsService.Write(contentUUID, v1AnnotationLifecycle, v1PlatformVersion, tid, exampleConcepts(conceptUUID)), "Failed to write annotation")
-	found, err := annotationsService.Delete(contentUUID, tid, v1AnnotationLifecycle)
+	assert.NoError(annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, tid, exampleConcepts(conceptUUID)), "Failed to write annotation")
+	found, err := annotationsService.Delete(contentUUID, tid, PACAnnotationLifecycle)
 	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
 	assert.NoError(err, "Error deleting annotations for content uuid %s", contentUUID)
 
@@ -293,12 +293,12 @@ func TestWriteDoesRemoveExistingIsClassifiedForV1TermsAndTheirRelationships(t *t
 		UUID string `json:"b.uuid"`
 	}{}
 
-	//CHECK THAT ALL THE v1 annotations were updated
+	//CHECK THAT ALL THE PAC annotations are deleted
 	getContentQuery := &neoism.CypherQuery{
 		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[r]->(b:Thing) where r.lifecycle={lifecycle} RETURN b.uuid`,
 		Parameters: map[string]interface{}{
 			"contentUuid": contentUUID,
-			"lifecycle":   v1AnnotationLifecycle,
+			"lifecycle":   PACAnnotationLifecycle,
 		},
 		Result: &result,
 	}

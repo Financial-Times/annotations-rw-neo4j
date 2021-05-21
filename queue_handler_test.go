@@ -33,7 +33,7 @@ func (suite *QueueHandlerTestSuite) SetupTest() {
 	var err error
 	suite.log = logger.NewUPPInfoLogger("annotations-rw")
 	suite.tid = "tid_sample"
-	suite.originSystem = "http://cmdb.ft.com/systems/methode-web-pub"
+	suite.originSystem = "http://cmdb.ft.com/systems/pac"
 	suite.forwarder = new(mockForwarder)
 	suite.headers = forwarder.CreateHeaders(suite.tid, suite.originSystem)
 	suite.body, err = ioutil.ReadFile("exampleAnnotationsMessage.json")
@@ -101,5 +101,23 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_JsonError() {
 	qh.Ingest()
 
 	suite.forwarder.AssertNumberOfCalls(suite.T(), "SendMessage", 0)
+	suite.annotationsService.AssertNumberOfCalls(suite.T(), "Write", 0)
+}
+
+func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_InvalidOrigin() {
+	suite.headers["Origin-System-Id"] = "http://cmdb.ft.com/systems/invalidOrigin"
+	message := kafka.NewFTMessage(suite.headers, string(suite.body))
+
+	qh := &queueHandler{
+		annotationsService: suite.annotationsService,
+		consumer:           mockConsumer{message: message},
+		forwarder:          suite.forwarder,
+		originMap:          suite.originMap,
+		lifecycleMap:       suite.lifecycleMap,
+		log:                suite.log,
+	}
+	qh.Ingest()
+
+	// if message is valid, the first method to be called is annotationsService.Write
 	suite.annotationsService.AssertNumberOfCalls(suite.T(), "Write", 0)
 }

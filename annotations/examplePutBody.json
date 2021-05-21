@@ -7,7 +7,8 @@
                 "http://www.ft.com/ontology/organisation/Organisation",
                 "http://www.ft.com/ontology/core/Thing",
                 "http://www.ft.com/ontology/concept/Concept"
-            ]
+            ],
+            "predicate": "isClassifiedBy"
         },
         "provenances": [
             {
