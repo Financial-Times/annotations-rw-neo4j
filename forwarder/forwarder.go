@@ -8,7 +8,7 @@ import (
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/Financial-Times/kafka-client-go/kafka"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 )
 
 // The outputMessage represents the structure of the JSON object that is written in the body of the message
@@ -71,7 +71,7 @@ func (f Forwarder) prepareBody(platformVersion string, uuid string, anns annotat
 // according to the specified transaction ID and origin system.
 func CreateHeaders(transactionID string, originSystem string) map[string]string {
 	const dateFormat = "2006-01-02T15:04:05.000Z0700"
-	messageUUID, _ := uuid.NewV4()
+	messageUUID := uuid.New()
 	return map[string]string{
 		"X-Request-Id":      transactionID,
 		"Message-Timestamp": time.Now().Format(dateFormat),
