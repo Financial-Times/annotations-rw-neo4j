@@ -3,13 +3,13 @@
 package annotations
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"testing"
 
-	"github.com/Financial-Times/go-logger"
-	"github.com/Financial-Times/neo-utils-go/neoutils"
-	"github.com/jmcvetta/neoism"
+	cmneo4j "github.com/Financial-Times/cm-neo4j-driver"
+	logger "github.com/Financial-Times/go-logger/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,38 +25,39 @@ const (
 )
 
 func TestConstraintsApplied(t *testing.T) {
+	t.Skip("Skip, because the driver doesn't support EnsureConstraints/Indexes for Neo4j less than 4.x")
+
 	assert := assert.New(t)
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	defer cleanDB(t, assert)
 
 	err := annotationsService.Initialise()
 	assert.NoError(err)
 
-	testSetupQuery := &neoism.CypherQuery{
-		Statement: `MERGE (n:Thing {uuid:{contentUuid}}) SET n :Thing`,
-		Parameters: map[string]interface{}{
+	testSetupQuery := &cmneo4j.Query{
+		Cypher: `MERGE (n:Thing {uuid:$contentUuid}) SET n :Thing`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 		},
 	}
 
-	err = conn.CypherBatch([]*neoism.CypherQuery{testSetupQuery})
+	err = driver.Write(testSetupQuery)
 	assert.NoError(err, "Error setting up Test data")
-	testQuery := &neoism.CypherQuery{
-		Statement: `CREATE (n:Thing {uuid:{contentUuid}}) SET n :Thing`,
-		Parameters: map[string]interface{}{
+	testQuery := &cmneo4j.Query{
+		Cypher: `CREATE (n:Thing {uuid:$contentUuid}) SET n :Thing`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 		},
 	}
-	expectErr := conn.CypherBatch([]*neoism.CypherQuery{testQuery})
+	expectErr := driver.Write(testQuery)
 	assert.Error(expectErr, "DB constraint is not applied correctly")
 }
 
 func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 
 	conceptWithoutID := Annotations{Annotation{
 		Thing: Thing{
@@ -85,8 +86,8 @@ func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 }
 
 func TestWriteFailsForInvalidPredicate(t *testing.T) {
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	conceptWithInvalidPredicate := Annotation{
 		Thing: Thing{ID: fmt.Sprintf("http://api.ft.com/things/%s", oldConceptUUID),
 			PrefLabel: "prefLabel",
@@ -115,9 +116,8 @@ func TestWriteFailsForInvalidPredicate(t *testing.T) {
 
 func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	annotationsToDelete := exampleConcepts(conceptUUID)
 
 	assert.NoError(annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, tid, annotationsToDelete), "Failed to write annotation")
@@ -136,17 +136,16 @@ func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 	checkNodeIsStillPresent(contentUUID, t)
 	checkNodeIsStillPresent(conceptUUID, t)
 
-	err = deleteNode(conn, contentUUID)
+	err = deleteNode(driver, contentUUID)
 	assert.NoError(err, "Error trying to delete content node with uuid %s, err=%v", contentUUID, err)
-	err = deleteNode(conn, conceptUUID)
+	err = deleteNode(driver, conceptUUID)
 	assert.NoError(err, "Error trying to delete concept node with uuid %s, err=%v", conceptUUID, err)
 }
 
 func TestWriteAllValuesPresent(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
 	assert.NoError(annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, tid, annotationsToWrite), "Failed to write annotation")
@@ -158,23 +157,22 @@ func TestWriteAllValuesPresent(t *testing.T) {
 
 func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithoutLifecycle(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	defer cleanDB(t, assert)
 
-	testSetupQuery := &neoism.CypherQuery{
-		Statement: `MERGE (n:Thing {uuid:{contentUuid}}) SET n :Thing
-		MERGE (b:Brand{uuid:{brandUuid}}) SET b :Concept:Thing
-		CREATE (n)-[rel:IS_CLASSIFIED_BY{platformVersion:{platformVersion}}]->(b)`,
-		Parameters: map[string]interface{}{
+	testSetupQuery := &cmneo4j.Query{
+		Cypher: `MERGE (n:Thing {uuid:$contentUuid}) SET n :Thing
+		MERGE (b:Brand{uuid:$brandUuid}) SET b :Concept:Thing
+		CREATE (n)-[rel:IS_CLASSIFIED_BY{platformVersion:$platformVersion}]->(b)`,
+		Params: map[string]interface{}{
 			"contentUuid":     contentUUID,
 			"brandUuid":       brandUUID,
 			"platformVersion": v2PlatformVersion,
 		},
 	}
 
-	err := conn.CypherBatch([]*neoism.CypherQuery{testSetupQuery})
+	err := driver.Write(testSetupQuery)
 	assert.NoError(err)
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
@@ -190,31 +188,30 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithoutLifecy
 		UUID string `json:"b.uuid"`
 	}{}
 
-	getContentQuery := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[:IS_CLASSIFIED_BY]->(b:Brand) RETURN b.uuid`,
-		Parameters: map[string]interface{}{
+	getContentQuery := &cmneo4j.Query{
+		Cypher: `MATCH (n:Thing {uuid:$contentUuid})-[:IS_CLASSIFIED_BY]->(b:Brand {uuid:$brandUuid}) RETURN b.uuid`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 			"brandUuid":   brandUUID,
 		},
 		Result: &result,
 	}
 
-	readErr := conn.CypherBatch([]*neoism.CypherQuery{getContentQuery})
+	readErr := driver.Read(getContentQuery)
 	assert.NoError(readErr)
 	assert.NotEmpty(result)
 }
 
 func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLifeCycle(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	defer cleanDB(t, assert)
-	contentQuery := &neoism.CypherQuery{
-		Statement: `MERGE (n:Thing {uuid:{contentUuid}}) SET n :Thing
-		MERGE (b:Brand{uuid:{brandUuid}}) SET b :Concept:Thing
-		CREATE (n)-[rel:IS_CLASSIFIED_BY{platformVersion:{platformVersion}, lifecycle: {lifecycle}}]->(b)`,
-		Parameters: map[string]interface{}{
+	contentQuery := &cmneo4j.Query{
+		Cypher: `MERGE (n:Thing {uuid:$contentUuid}) SET n :Thing
+		MERGE (b:Brand{uuid:$brandUuid}) SET b :Concept:Thing
+		CREATE (n)-[rel:IS_CLASSIFIED_BY{platformVersion:$platformVersion, lifecycle: $lifecycle}]->(b)`,
+		Params: map[string]interface{}{
 			"contentUuid":     contentUUID,
 			"brandUuid":       brandUUID,
 			"platformVersion": v2PlatformVersion,
@@ -222,7 +219,7 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLi
 		},
 	}
 
-	err := conn.CypherBatch([]*neoism.CypherQuery{contentQuery})
+	err := driver.Write(contentQuery)
 	assert.NoError(err, "Error c for content uuid %s", contentUUID)
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
@@ -238,51 +235,50 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLi
 		UUID string `json:"b.uuid"`
 	}{}
 
-	getContentQuery := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[:IS_CLASSIFIED_BY]->(b:Brand) RETURN b.uuid`,
-		Parameters: map[string]interface{}{
+	getContentQuery := &cmneo4j.Query{
+		Cypher: `MATCH (n:Thing {uuid:$contentUuid})-[:IS_CLASSIFIED_BY]->(b:Brand{uuid:$brandUuid}) RETURN b.uuid`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 			"brandUuid":   brandUUID,
 		},
 		Result: &result,
 	}
 
-	readErr := conn.CypherBatch([]*neoism.CypherQuery{getContentQuery})
+	readErr := driver.Read(getContentQuery)
 	assert.NoError(readErr)
 	assert.NotEmpty(result)
 }
 
 func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
 
 	defer cleanDB(t, assert)
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 
-	createContentQuery := &neoism.CypherQuery{
-		Statement: `MERGE (c:Content{uuid:{contentUuid}}) SET c :Thing RETURN c.uuid`,
-		Parameters: map[string]interface{}{
+	createContentQuery := &cmneo4j.Query{
+		Cypher: `MERGE (c:Content{uuid:$contentUuid}) SET c :Thing RETURN c.uuid`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 		},
 	}
 
-	assert.NoError(conn.CypherBatch([]*neoism.CypherQuery{createContentQuery}))
+	assert.NoError(driver.Write(createContentQuery))
 
-	contentQuery := &neoism.CypherQuery{
-		Statement: `MERGE (n:Thing {uuid:{contentUuid}})
-		 	    MERGE (a:Thing{uuid:{conceptUUID}})
+	contentQuery := &cmneo4j.Query{
+		Cypher: `MERGE (n:Thing {uuid:$contentUuid})
+		 	    MERGE (a:Thing{uuid:$conceptUUID})
 			    CREATE (n)-[rel1:MENTIONS{lifecycle:"annotations-v2"}]->(a)
-			    MERGE (b:Thing{uuid:{secondConceptUUID}})
+			    MERGE (b:Thing{uuid:$secondConceptUUID})
 			    CREATE (n)-[rel2:IS_CLASSIFIED_BY{lifecycle:"annotations-pac"}]->(b)`,
-		Parameters: map[string]interface{}{
+		Params: map[string]interface{}{
 			"contentUuid":       contentUUID,
 			"conceptUUID":       conceptUUID,
 			"secondConceptUUID": secondConceptUUID,
 		},
 	}
 
-	assert.NoError(conn.CypherBatch([]*neoism.CypherQuery{contentQuery}))
+	assert.NoError(driver.Write(contentQuery))
 
 	assert.NoError(annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, tid, exampleConcepts(conceptUUID)), "Failed to write annotation")
 	found, err := annotationsService.Delete(contentUUID, tid, PACAnnotationLifecycle)
@@ -294,53 +290,52 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 	}{}
 
 	//CHECK THAT ALL THE PAC annotations are deleted
-	getContentQuery := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[r]->(b:Thing) where r.lifecycle={lifecycle} RETURN b.uuid`,
-		Parameters: map[string]interface{}{
+	getContentQuery := &cmneo4j.Query{
+		Cypher: `MATCH (n:Thing {uuid:$contentUuid})-[r]->(b:Thing) where r.lifecycle=$lifecycle RETURN b.uuid`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 			"lifecycle":   PACAnnotationLifecycle,
 		},
 		Result: &result,
 	}
 
-	readErr := conn.CypherBatch([]*neoism.CypherQuery{getContentQuery})
-	assert.NoError(readErr)
+	readErr := driver.Read(getContentQuery)
+	assert.True(errors.Is(readErr, cmneo4j.ErrNoResultsFound), "ErrNoResultsFound is expected")
 	assert.Empty(result)
 
 	//CHECK THAT V2 annotations were not deleted
-	getContentQuery = &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[r]->(b:Thing) where r.lifecycle={lifecycle} RETURN b.uuid`,
-		Parameters: map[string]interface{}{
+	getContentQuery = &cmneo4j.Query{
+		Cypher: `MATCH (n:Thing {uuid:$contentUuid})-[r]->(b:Thing) where r.lifecycle=$lifecycle RETURN b.uuid`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 			"lifecycle":   v2AnnotationLifecycle,
 		},
 		Result: &result,
 	}
 
-	readErr = conn.CypherBatch([]*neoism.CypherQuery{getContentQuery})
+	readErr = driver.Read(getContentQuery)
 	assert.NoError(readErr)
 	assert.NotEmpty(result)
 
 	//Delete v2 annotations
-	removeRelationshipQuery := &neoism.CypherQuery{
-		Statement: `
-			MATCH (b:Thing {uuid:{conceptUUID}})<-[rel]-(t:Thing)
+	removeRelationshipQuery := &cmneo4j.Query{
+		Cypher: `
+			MATCH (b:Thing {uuid:$conceptUUID})<-[rel]-(t:Thing)
 			where rel.platformVersion = "v2"
 			DELETE rel
 		`,
-		Parameters: map[string]interface{}{
+		Params: map[string]interface{}{
 			"conceptUUID": conceptUUID,
 		},
 	}
 
-	assert.NoError(conn.CypherBatch([]*neoism.CypherQuery{removeRelationshipQuery}))
+	assert.NoError(driver.Write(removeRelationshipQuery))
 }
 
 func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 
 	multiConceptAnnotations := Annotations{
 		Annotation{
@@ -395,9 +390,8 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 
 func TestIfProvenanceGetsWrittenWithEmptyAgentRoleAndTimeValues(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 
 	assert.NoError(annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, tid, conceptWithoutAgent), "Failed to write annotation")
 	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, contentUUID, v2AnnotationLifecycle, conceptWithoutAgent)
@@ -407,15 +401,14 @@ func TestIfProvenanceGetsWrittenWithEmptyAgentRoleAndTimeValues(t *testing.T) {
 func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 	assert := assert.New(t)
 	defer cleanDB(t, assert)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 
-	contentQuery := &neoism.CypherQuery{
-		Statement: `CREATE (n:Thing {uuid:{contentUuid}})
-		 	    CREATE (a:Thing{uuid:{conceptUuid}})
-			    CREATE (n)-[rel:MENTIONS{platformVersion:{platformVersion}, lifecycle:{lifecycle}}]->(a)`,
-		Parameters: map[string]interface{}{
+	contentQuery := &cmneo4j.Query{
+		Cypher: `CREATE (n:Thing {uuid:$contentUuid})
+		 	    CREATE (a:Thing{uuid:$conceptUuid})
+			    CREATE (n)-[rel:MENTIONS{platformVersion:$platformVersion, lifecycle:$lifecycle}]->(a)`,
+		Params: map[string]interface{}{
 			"contentUuid":     contentUUID,
 			"conceptUuid":     conceptUUID,
 			"platformVersion": nextVideoAnnotationsLifecycle,
@@ -423,7 +416,7 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 		},
 	}
 
-	err := conn.CypherBatch([]*neoism.CypherQuery{contentQuery})
+	err := driver.Write(contentQuery)
 	assert.NoError(err, "Error creating test data in database.")
 
 	assert.NoError(annotationsService.Write(contentUUID, nextVideoAnnotationsLifecycle, nextVideoPlatformVersion, tid, exampleConcepts(secondConceptUUID)), "Failed to write annotation.")
@@ -433,16 +426,16 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 		PlatformVersion string `json:"r.platformVersion"`
 	}{}
 
-	getContentQuery := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{contentUuid}})-[r]->(b:Thing {uuid:{conceptUuid}}) RETURN r.lifecycle, r.platformVersion`,
-		Parameters: map[string]interface{}{
+	getContentQuery := &cmneo4j.Query{
+		Cypher: `MATCH (n:Thing {uuid:$contentUuid})-[r]->(b:Thing {uuid:$conceptUuid}) RETURN r.lifecycle, r.platformVersion`,
+		Params: map[string]interface{}{
 			"contentUuid": contentUUID,
 			"conceptUuid": secondConceptUUID,
 		},
 		Result: &result,
 	}
 
-	readErr := conn.CypherBatch([]*neoism.CypherQuery{getContentQuery})
+	readErr := driver.Read(getContentQuery)
 
 	assert.NoError(readErr)
 	assert.Equal(1, len(result), "Relationships size worng.")
@@ -455,9 +448,8 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 
 func TestUpdateWillRemovePreviousAnnotations(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	oldAnnotationsToWrite := exampleConcepts(oldConceptUUID)
 
 	assert.NoError(annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, tid, oldAnnotationsToWrite), "Failed to write annotations")
@@ -471,25 +463,24 @@ func TestUpdateWillRemovePreviousAnnotations(t *testing.T) {
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID, oldConceptUUID})
 }
 
-func getNeoConnection(t *testing.T) neoutils.NeoConnection {
-	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
+func getNeo4jDriver(t *testing.T) *cmneo4j.Driver {
+	t.Helper()
 
 	url := os.Getenv("NEO4J_TEST_URL")
 	if url == "" {
-		url = "http://localhost:7474/db/data"
+		url = "bolt://localhost:7687"
 	}
 
-	conf := neoutils.DefaultConnectionConfig()
-	conf.Transactional = false
-	db, err := neoutils.Connect(url, conf)
-	assert.NoError(err, "Failed to connect to Neo4j")
-	return db
+	log := logger.NewUPPLogger("annotations-rw-neo4j-cm-neo4j-driver", "ERROR")
+	driver, err := cmneo4j.NewDefaultDriver(url, log)
+
+	assert.NoError(t, err, "Unexpected error when creating a new driver")
+
+	return driver
 }
 
 func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, contentUUID string, annotationLifecycle string, expectedAnnotations []Annotation) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
 	storedThings, found, err := annotationsService.Read(contentUUID, tid, annotationLifecycle)
 	storedAnnotations := storedThings.(Annotations)
 
@@ -512,43 +503,45 @@ func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, contentUU
 
 func checkNodeIsStillPresent(uuid string, t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	results := []struct {
 		UUID string `json:"uuid"`
 	}{}
 
-	query := &neoism.CypherQuery{
-		Statement: `MATCH (n:Thing {uuid:{uuid}}) return n.uuid
+	query := &cmneo4j.Query{
+		Cypher: `MATCH (n:Thing {uuid:$uuid}) return n.uuid
 		as uuid`,
-		Parameters: map[string]interface{}{
+		Params: map[string]interface{}{
 			"uuid": uuid,
 		},
 		Result: &results,
 	}
 
-	err := conn.CypherBatch([]*neoism.CypherQuery{query})
+	err := driver.Read(query)
 	assert.NoError(err, "UnexpectedError")
 	assert.True(len(results) == 1, "Didn't find a node")
 	assert.Equal(uuid, results[0].UUID, "Did not find correct node")
 }
 
 func checkRelationship(t *testing.T, assert *assert.Assertions, contentID string, platformVersion string) {
-	countQuery := `Match (t:Thing {uuid: {contentID}})-[r {lifecycle: {lifecycle}}]-(x) return count(r) as c`
+	countQuery := `Match (t:Thing {uuid: $contentID})-[r {lifecycle: $lifecycle}]-(x) return count(r) as c`
 
 	results := []struct {
 		Count int `json:"c"`
 	}{}
 
-	qs := &neoism.CypherQuery{
-		Statement:  countQuery,
-		Parameters: neoism.Props{"contentID": contentID, "lifecycle": "annotations-" + platformVersion},
-		Result:     &results,
+	qs := &cmneo4j.Query{
+		Cypher: countQuery,
+		Params: map[string]interface{}{
+			"contentID": contentID,
+			"lifecycle": "annotations-" + platformVersion,
+		},
+		Result: &results,
 	}
 
-	conn := getNeoConnection(t)
-	err := conn.CypherBatch([]*neoism.CypherQuery{qs})
+	driver := getNeo4jDriver(t)
+	err := driver.Read(qs)
 	assert.NoError(err)
 	assert.Equal(1, len(results), "More results found than expected!")
 	assert.Equal(1, results[0].Count, "No Relationship with Lifecycle found!")
@@ -556,74 +549,73 @@ func checkRelationship(t *testing.T, assert *assert.Assertions, contentID string
 
 func cleanUp(t *testing.T, contentUUID string, annotationLifecycle string, conceptUUIDs []string) {
 	assert := assert.New(t)
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
 	found, err := annotationsService.Delete(contentUUID, tid, annotationLifecycle)
 	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
 	assert.NoError(err, "Error deleting annotations for content uuid %s", contentUUID)
 
-	err = deleteNode(conn, contentUUID)
+	err = deleteNode(driver, contentUUID)
 	assert.NoError(err, "Could not delete content node")
 
 	for _, conceptUUID := range conceptUUIDs {
-		err = deleteNode(conn, conceptUUID)
+		err = deleteNode(driver, conceptUUID)
 		assert.NoError(err, "Could not delete concept node")
 	}
 }
 
 func cleanDB(t *testing.T, assert *assert.Assertions) {
-	conn := getNeoConnection(t)
-	annotationsService = NewCypherAnnotationsService(conn)
-	qs := []*neoism.CypherQuery{
+	driver := getNeo4jDriver(t)
+	annotationsService = NewCypherAnnotationsService(driver)
+	qs := []*cmneo4j.Query{
 		{
-			Statement: "MATCH (mc:Thing {uuid: {contentUUID}}) DETACH DELETE mc",
-			Parameters: map[string]interface{}{
+			Cypher: "MATCH (mc:Thing {uuid: $contentUUID}) DETACH DELETE mc",
+			Params: map[string]interface{}{
 				"contentUUID": contentUUID,
 			},
 		},
 		{
-			Statement: "MATCH (fc:Thing {uuid: {conceptUUID}}) DETACH DELETE fc",
-			Parameters: map[string]interface{}{
+			Cypher: "MATCH (fc:Thing {uuid: $conceptUUID}) DETACH DELETE fc",
+			Params: map[string]interface{}{
 				"conceptUUID": conceptUUID,
 			},
 		},
 		{
-			Statement: "MATCH (fc:Thing {uuid: {secondConceptUUID}}) DETACH DELETE fc",
-			Parameters: map[string]interface{}{
+			Cypher: "MATCH (fc:Thing {uuid: $secondConceptUUID}) DETACH DELETE fc",
+			Params: map[string]interface{}{
 				"secondConceptUUID": secondConceptUUID,
 			},
 		},
 		{
-			Statement: "MATCH (fc:Thing {uuid: {oldConceptUUID}}) DETACH DELETE fc",
-			Parameters: map[string]interface{}{
+			Cypher: "MATCH (fc:Thing {uuid: $oldConceptUUID}) DETACH DELETE fc",
+			Params: map[string]interface{}{
 				"oldConceptUUID": oldConceptUUID,
 			},
 		},
 		{
-			Statement: "MATCH (fc:Thing {uuid: {brandUUID}}) DETACH DELETE fc",
-			Parameters: map[string]interface{}{
+			Cypher: "MATCH (fc:Thing {uuid: $brandUUID}) DETACH DELETE fc",
+			Params: map[string]interface{}{
 				"brandUUID": brandUUID,
 			},
 		},
 	}
 
-	err := conn.CypherBatch(qs)
+	err := driver.Write(qs...)
 	assert.NoError(err)
 }
 
-func deleteNode(conn neoutils.NeoConnection, uuid string) error {
-
-	query := &neoism.CypherQuery{
-		Statement: `
-			MATCH (p:Thing {uuid: {uuid}})
+func deleteNode(driver *cmneo4j.Driver, uuid string) error {
+	query := &cmneo4j.Query{
+		Cypher: `
+			MATCH (p:Thing {uuid: $uuid})
 			DELETE p
 		`,
-		Parameters: map[string]interface{}{
+		Params: map[string]interface{}{
 			"uuid": uuid,
 		},
 	}
 
-	return conn.CypherBatch([]*neoism.CypherQuery{query})
+	return driver.Write(query)
 }
 
 func exampleConcepts(uuid string) Annotations {

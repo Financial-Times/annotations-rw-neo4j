@@ -12,11 +12,11 @@ import (
 
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/forwarder"
+	cmneo4j "github.com/Financial-Times/cm-neo4j-driver"
 
 	logger "github.com/Financial-Times/go-logger/v2"
 	"github.com/Financial-Times/http-handlers-go/v2/httphandlers"
 	"github.com/Financial-Times/kafka-client-go/kafka"
-	"github.com/Financial-Times/neo-utils-go/neoutils"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
 
 	"github.com/gorilla/mux"
@@ -29,8 +29,8 @@ func main() {
 	app := cli.App("annotations-rw", "A RESTful API for managing Annotations in neo4j")
 	neoURL := app.String(cli.StringOpt{
 		Name:   "neoUrl",
-		Value:  "http://localhost:7474/db/data",
-		Desc:   "neo4j endpoint URL",
+		Value:  "bolt://localhost:7687",
+		Desc:   "neoURL must point to a leader node or to use neo4j:// scheme, otherwise writes will fail",
 		EnvVar: "NEO_URL",
 	})
 	port := app.Int(cli.IntOpt{
@@ -39,17 +39,17 @@ func main() {
 		Desc:   "Port to listen on",
 		EnvVar: "APP_PORT",
 	})
-	batchSize := app.Int(cli.IntOpt{
-		Name:   "batchSize",
-		Value:  1024,
-		Desc:   "Maximum number of statements to execute per batch",
-		EnvVar: "BATCH_SIZE",
-	})
 	logLevel := app.String(cli.StringOpt{
 		Name:   "logLevel",
 		Value:  "INFO",
 		Desc:   "Logging level (DEBUG, INFO, WARN, ERROR)",
 		EnvVar: "LOG_LEVEL",
+	})
+	dbDriverLogLevel := app.String(cli.StringOpt{
+		Name:   "dbDriverLogLevel",
+		Value:  "WARN",
+		Desc:   "Db's driver logging level (DEBUG, INFO, WARN, ERROR)",
+		EnvVar: "DB_DRIVER_LOG_LEVEL",
 	})
 	config := app.String(cli.StringOpt{
 		Name:   "lifecycleConfigPath",
@@ -109,7 +109,8 @@ func main() {
 		log := logger.NewUPPLogger(*appName, *logLevel, logConf)
 		log.WithFields(map[string]interface{}{"port": *port, "neoURL": *neoURL}).Infof("Service %s has successfully started.", *appName)
 
-		annotationsService, err := setupAnnotationsService(*neoURL, *batchSize)
+		dbLog := logger.NewUPPLogger(*appName+"-cmneo4j-driver", *dbDriverLogLevel)
+		annotationsService, err := setupAnnotationsService(*neoURL, dbLog)
 		if err != nil {
 			log.WithError(err).Fatal("can't initialise annotations service")
 		}
@@ -186,22 +187,19 @@ func main() {
 	}
 }
 
-func setupAnnotationsService(neoURL string, bathSize int) (annotations.Service, error) {
-	conf := neoutils.DefaultConnectionConfig()
-	conf.BatchSize = bathSize
-	db, err := neoutils.Connect(neoURL, conf)
-
+func setupAnnotationsService(neoURL string, dbLogger *logger.UPPLogger) (annotations.Service, error) {
+	driver, err := cmneo4j.NewDefaultDriver(neoURL, dbLogger)
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to Neo4j: %w", err)
+		return nil, fmt.Errorf("failed to create a new cmneo4j driver: %v", err)
 	}
 
-	annotationsService := annotations.NewCypherAnnotationsService(db)
+	annotationsService := annotations.NewCypherAnnotationsService(driver)
 	err = annotationsService.Initialise()
 	if err != nil {
 		return nil, fmt.Errorf("annotations service has not been initialised correctly: %w", err)
 	}
 
-	return annotations.NewCypherAnnotationsService(db), nil
+	return annotationsService, nil
 }
 
 func setupMessageProducer(brokerAddress string, producerTopic string) (kafka.Producer, error) {

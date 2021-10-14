@@ -20,10 +20,10 @@ You have the following options here:
 
 Command line options:
 ```
---neoUrl                  neo4j endpoint URL (env $NEO_URL) (default "http://localhost:7474/db/data")
+--neoUrl                  neoURL must point to a leader node or to use neo4j:// scheme, otherwise writes will fail (env $NEO_URL) (default "bolt://localhost:7687")
 --port                    Port to listen on (env $APP_PORT) (default 8080)
---batchSize               Maximum number of statements to execute per batch (env $BATCH_SIZE) (default 1024)
 --logLevel                Logging level (DEBUG, INFO, WARN, ERROR) (env $LOG_LEVEL) (default "INFO")
+--dbDriverLogLevel        Db's driver logging level (DEBUG, INFO, WARN, ERROR) (env $DB_DRIVER_LOG_LEVEL) (default "WARN")
 --lifecycleConfigPath     Json Config file - containing two config maps: one for originHeader to lifecycle, another for lifecycle to platformVersion mappings.  (env $LIFECYCLE_CONFIG_PATH) (default "annotation-config.json")
 --zookeeperAddress        Address of the zookeeper service (env $ZOOKEEPER_ADDRESS) (default "localhost:2181")
 --shouldConsumeMessages   Boolean value specifying if this service should consume messages from the specified topic (env $SHOULD_CONSUME_MESSAGES)
@@ -38,7 +38,10 @@ Command line options:
 ## Running tests locally
 * Run unit tests only: `go test -race ./...`
 * Run unit and integration tests:
+
+    In order to execute the integration tests you must provide GITHUB_USERNAME and GITHUB_TOKEN values, because the service is depending on internal repositories.
     ```
+    GITHUB_USERNAME=<username> GITHUB_TOKEN=<token> \
     docker-compose -f docker-compose-tests.yml up -d --build && \
     docker logs -f test-runner && \
     docker-compose -f docker-compose-tests.yml down -v
