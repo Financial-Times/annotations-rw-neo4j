@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Financial-Times/go-logger"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,12 +18,11 @@ const (
 
 func TestCreateAnnotationQuery(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
 	annotationToWrite := exampleConcept(oldConceptUUID)
 
 	query, err := createAnnotationQuery(contentUUID, annotationToWrite, v2PlatformVersion, v2AnnotationLifecycle)
 	assert.NoError(err, "Cypher query for creating annotations couldn't be created.")
-	params := query.Parameters["annProps"].(map[string]interface{})
+	params := query.Params["annProps"].(map[string]interface{})
 	assert.Equal(v2PlatformVersion, params["platformVersion"], fmt.Sprintf("\nExpected: %s\nActual: %s", v2PlatformVersion, params["platformVersion"]))
 }
 
@@ -90,19 +88,17 @@ func TestCreateAnnotationQueryWithPredicate(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
-			logger.InitDefaultLogger("annotations-rw")
 			query, err := createAnnotationQuery(contentUUID, test.annotationToWrite, test.platformVersion, test.lifecycle)
 
 			assert.NoError(err, "Cypher query for creating annotations couldn't be created.")
-			assert.Contains(query.Statement, test.relationship, "Relationship name is not inserted!")
-			assert.NotContains(query.Statement, "MENTIONS", fmt.Sprintf("%s should be inserted instead of MENTIONS", test.relationship))
+			assert.Contains(query.Cypher, test.relationship, "Relationship name is not inserted!")
+			assert.NotContains(query.Cypher, "MENTIONS", fmt.Sprintf("%s should be inserted instead of MENTIONS", test.relationship))
 		})
 	}
 }
 
 func TestCreateAnnotationQueryWithoutPredicate(t *testing.T) {
 	assert := assert.New(t)
-	logger.InitDefaultLogger("annotations-rw")
 	annotation := exampleConcept(oldConceptUUID)
 	annotation.Thing.Predicate = ""
 
