@@ -2,6 +2,8 @@ github.com/DataDog/zstd v1.3.6-0.20190409195224-796139022798 h1:2T/jmrHeTezcCM58
 github.com/DataDog/zstd v1.3.6-0.20190409195224-796139022798/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
 github.com/Financial-Times/cm-neo4j-driver v0.0.1 h1:AFD0V2LNHJaxhs2kNVc3BDRwnY6uv0hdyWbYk2eONZ0=
 github.com/Financial-Times/cm-neo4j-driver v0.0.1/go.mod h1:0q7rpnzwBxptooh2/cqd9xALfgNEgVF6JLEzw0ygIDQ=
+github.com/Financial-Times/cm-neo4j-driver v1.0.0-rc1 h1:7nJ9UQN+fRcjjvRW1SWU/afcrjWG0Nmk4vysubxUxgs=
+github.com/Financial-Times/cm-neo4j-driver v1.0.0-rc1/go.mod h1:0q7rpnzwBxptooh2/cqd9xALfgNEgVF6JLEzw0ygIDQ=
 github.com/Financial-Times/go-fthealth v0.0.0-20180807113633-3d8eb430d5b5 h1:XH5h45aAyG1bAFBYmkgJkT4q13CbkCJ+gj9+rIfzuL8=
 github.com/Financial-Times/go-fthealth v0.0.0-20180807113633-3d8eb430d5b5/go.mod h1:gpAzq6W5rCheYlY32JOIxS/VjVcYHbC2PkMzQngHT9c=
 github.com/Financial-Times/go-logger/v2 v2.0.1 h1:iekEfSsUtlkg+YkXTZo+/fIN2VbZ2/3Hl9yolP3z5X8=
