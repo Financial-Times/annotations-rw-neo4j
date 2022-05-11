@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/DataDog/zstd v1.3.6-0.20190409195224-796139022798 // indirect
-	github.com/Financial-Times/cm-neo4j-driver v0.0.1
+	github.com/Financial-Times/cm-neo4j-driver v1.1.0
 	github.com/Financial-Times/go-fthealth v0.0.0-20180807113633-3d8eb430d5b5
 	github.com/Financial-Times/go-logger/v2 v2.0.1
 	github.com/Financial-Times/http-handlers-go/v2 v2.1.0
