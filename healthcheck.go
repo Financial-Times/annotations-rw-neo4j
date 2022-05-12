@@ -12,6 +12,8 @@ import (
 )
 
 type healthCheckHandler struct {
+	systemCode         string
+	appName            string
 	annotationsService annotations.Service
 	consumer           kafka.Consumer
 }
@@ -23,8 +25,8 @@ func (h healthCheckHandler) Health() func(w http.ResponseWriter, r *http.Request
 	}
 	hc := fthealth.TimedHealthCheck{
 		HealthCheck: fthealth.HealthCheck{
-			SystemCode:  "annotation-rw",
-			Name:        "annotation-rw",
+			SystemCode:  h.systemCode,
+			Name:        h.appName,
 			Description: "Checks if all the dependent services are reachable and healthy.",
 			Checks:      checks,
 		},
@@ -59,7 +61,7 @@ func (h healthCheckHandler) readQueueCheck() fthealth.Check {
 		Severity:         1,
 		BusinessImpact:   "Content metadata can't be read from queue. This will negatively impact metadata/annotations availability.",
 		TechnicalSummary: "Read message queue is not reachable/healthy",
-		PanicGuide:       "https://runbooks.in.ft.com/annotations-rw-neo4j",
+		PanicGuide:       "https://runbooks.in.ft.com/" + h.systemCode,
 		Checker:          h.checkKafkaConnectivity,
 	}
 }
@@ -71,7 +73,7 @@ func (h healthCheckHandler) writerCheck() fthealth.Check {
 		Severity:         1,
 		BusinessImpact:   "Unable to respond to Annotation API requests",
 		TechnicalSummary: "Cannot connect to Neo4j a instance with at least one person loaded in it",
-		PanicGuide:       "https://runbooks.in.ft.com/annotations-rw-neo4j",
+		PanicGuide:       "https://runbooks.in.ft.com/" + h.systemCode,
 		Checker:          h.Checker,
 	}
 }

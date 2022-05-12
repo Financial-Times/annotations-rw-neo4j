@@ -2,6 +2,7 @@
 replicaCount: 2
 service:
   name: suggestions-rw-neo4j
+  systemCode: suggestions-rw-neo4j
 env:
   SHOULD_CONSUME_MESSAGES: false
   SHOULD_FORWARD_MESSAGES: false

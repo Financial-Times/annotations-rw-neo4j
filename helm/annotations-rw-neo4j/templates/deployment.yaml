@@ -33,6 +33,10 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Chart.Version }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
+        - name: APP_NAME
+          value: {{ .Values.service.name }}
+        - name: APP_SYSTEM_CODE
+          value: {{ .Values.service.systemCode }}
         - name: APP_PORT
           value: "8080"
         - name: NEO_URL

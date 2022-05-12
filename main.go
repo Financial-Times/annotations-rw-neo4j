@@ -104,6 +104,13 @@ func main() {
 		EnvVar: "APP_NAME",
 	})
 
+	appSystemCode := app.String(cli.StringOpt{
+		Name:   "appSystemCode",
+		Value:  "annotations-rw",
+		Desc:   "Name of the service",
+		EnvVar: "APP_SYSTEM_CODE",
+	})
+
 	app.Action = func() {
 		logConf := logger.KeyNamesConfig{KeyTime: "@time"}
 		log := logger.NewUPPLogger(*appName, *logLevel, logConf)
@@ -114,7 +121,11 @@ func main() {
 		if err != nil {
 			log.WithError(err).Fatal("can't initialise annotations service")
 		}
-		healtcheckHandler := healthCheckHandler{annotationsService: annotationsService}
+		healtcheckHandler := healthCheckHandler{
+			appName:            *appName,
+			systemCode:         *appSystemCode,
+			annotationsService: annotationsService,
+		}
 		originMap, lifecycleMap, messageType, err := readConfigMap(*config)
 		if err != nil {
 			log.WithError(err).Fatal("can't read service configuration")
