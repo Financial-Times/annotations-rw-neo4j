@@ -1,6 +1,6 @@
 {
   "originMap": {
-    "concept-suggestor": "annotations-v2"
+    "v2-annotations": "annotations-v2"
   },
   "lifecycleMap": {
     "annotations-v2": "v2"
