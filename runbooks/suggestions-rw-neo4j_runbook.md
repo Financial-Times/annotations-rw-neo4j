@@ -28,7 +28,7 @@ AWS
 
 ## Architecture
 
-Suggestions RW receives PUT requests with suggested annotations in the payload, stores them in the graph database (Neo4j) and forwards them on to the PostConceptSuggestions queue. The Annotation Writer owns all annotations that are linked to a piece of content that are written with lifecycle=annotations-v2.
+Suggestions RW receives PUT requests with suggested annotations in the payload, stores them in the graph database (Neo4j). The Annotation Writer owns all annotations that are linked to a piece of content that are written with lifecycle=annotations-v2.
 
 ## Contains Personal Data
 
