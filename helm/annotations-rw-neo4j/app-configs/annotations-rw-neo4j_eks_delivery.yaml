@@ -2,6 +2,7 @@
 replicaCount: 2
 service:
   name: annotations-rw-neo4j
+  systemCode: annotations-rw-neo4j
 env:
   SHOULD_CONSUME_MESSAGES: true
   SHOULD_FORWARD_MESSAGES: true
