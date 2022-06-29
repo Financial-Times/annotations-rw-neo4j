@@ -6,7 +6,8 @@ service:
 env:
   SHOULD_CONSUME_MESSAGES: true
   SHOULD_FORWARD_MESSAGES: true
-  CONSUMER_GROUP: annotations-rw
+  CONSUMER_GROUP: annotations-rw-neo4j
   CONSUMER_TOPIC: ConceptAnnotations
   PRODUCER_TOPIC: PostConceptAnnotations
+  KAFKA_LAG_TOLERANCE: 100
   LIFECYCLE_CONFIG_PATH: annotation-config.json

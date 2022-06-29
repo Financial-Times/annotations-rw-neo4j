@@ -16,7 +16,7 @@ import (
 
 	logger "github.com/Financial-Times/go-logger/v2"
 	"github.com/Financial-Times/http-handlers-go/v2/httphandlers"
-	"github.com/Financial-Times/kafka-client-go/kafka"
+	"github.com/Financial-Times/kafka-client-go/v3"
 	status "github.com/Financial-Times/service-status-go/httphandlers"
 
 	"github.com/gorilla/mux"
@@ -57,12 +57,6 @@ func main() {
 		Desc:   "Json Config file - containing two config maps: one for originHeader to lifecycle, another for lifecycle to platformVersion mappings. ",
 		EnvVar: "LIFECYCLE_CONFIG_PATH",
 	})
-	zookeeperAddress := app.String(cli.StringOpt{
-		Name:   "zookeeperAddress",
-		Value:  "localhost:2181",
-		Desc:   "Address of the zookeeper service",
-		EnvVar: "ZOOKEEPER_ADDRESS",
-	})
 	shouldConsumeMessages := app.Bool(cli.BoolOpt{
 		Name:   "shouldConsumeMessages",
 		Value:  false,
@@ -79,11 +73,16 @@ func main() {
 		Desc:   "Kafka consumer topic name",
 		EnvVar: "CONSUMER_TOPIC",
 	})
-	brokerAddress := app.String(cli.StringOpt{
-		Name:   "brokerAddress",
-		Value:  "localhost:9092",
+	kafkaLagTolerance := app.Int(cli.IntOpt{
+		Name:   "kafkaLagTolerance",
+		Desc:   "Kafka consumer lag tolerance",
+		EnvVar: "KAFKA_LAG_TOLERANCE",
+	})
+	kafkaAddress := app.String(cli.StringOpt{
+		Name:   "kafkaAddress",
+		Value:  "kafka:9092",
 		Desc:   "Kafka address",
-		EnvVar: "BROKER_ADDRESS",
+		EnvVar: "KAFKA_ADDRESS",
 	})
 	producerTopic := app.String(cli.StringOpt{
 		Name:   "producerTopic",
@@ -133,10 +132,7 @@ func main() {
 
 		var f forwarder.QueueForwarder
 		if *shouldForwardMessages {
-			p, setupErr := setupMessageProducer(*brokerAddress, *producerTopic)
-			if setupErr != nil {
-				log.WithError(setupErr).Fatal("can't initialise message producer")
-			}
+			p := setupMessageProducer(*kafkaAddress, *producerTopic, log)
 
 			f = &forwarder.Forwarder{
 				Producer:    p,
@@ -155,11 +151,8 @@ func main() {
 
 		var qh queueHandler
 		if *shouldConsumeMessages {
-			var consumer kafka.Consumer
-			consumer, err = setupMessageConsumer(*zookeeperAddress, *consumerGroup, *consumerTopic)
-			if err != nil {
-				log.WithError(err).Fatal("can't initialise message consumer")
-			}
+			consumer := setupMessageConsumer(*kafkaAddress, *consumerGroup, *consumerTopic, int64(*kafkaLagTolerance), log)
+
 			healtcheckHandler.consumer = consumer
 
 			qh = queueHandler{
@@ -187,7 +180,7 @@ func main() {
 		waitForSignal()
 		if *shouldConsumeMessages {
 			log.Infof("Shutting down Kafka consumer")
-			qh.consumer.Shutdown()
+			qh.consumer.Close()
 		}
 	}
 
@@ -213,33 +206,31 @@ func setupAnnotationsService(neoURL string, dbLogger *logger.UPPLogger) (annotat
 	return annotationsService, nil
 }
 
-func setupMessageProducer(brokerAddress string, producerTopic string) (kafka.Producer, error) {
-	producer, err := kafka.NewProducer(brokerAddress, producerTopic, kafka.DefaultProducerConfig())
-	if err != nil {
-		return nil, fmt.Errorf("cannot start queue producer: %w", err)
+func setupMessageProducer(brokerAddress string, producerTopic string, log *logger.UPPLogger) *kafka.Producer {
+	producerConfig := kafka.ProducerConfig{
+		BrokersConnectionString: brokerAddress,
+		Topic:                   producerTopic,
+		ConnectionRetryInterval: 0,
+		Options:                 kafka.DefaultProducerOptions(),
 	}
-	return producer, nil
+
+	producer := kafka.NewProducer(producerConfig, log)
+
+	return producer
 }
 
-func setupMessageConsumer(zookeeperAddress string, consumerGroup string, topic string) (kafka.Consumer, error) {
-	// discard the output of zookeeper library
-	noneLogger := logger.NewUPPInfoLogger("annotations-rw-neo4j-kafka-consumer")
-	noneLogger.SetOutput(ioutil.Discard)
-	groupConfig := kafka.DefaultConsumerConfig()
-	groupConfig.Zookeeper.Logger = noneLogger
-
-	config := kafka.Config{
-		ZookeeperConnectionString: zookeeperAddress,
-		ConsumerGroup:             consumerGroup,
-		Topics:                    []string{topic},
-		ConsumerGroupConfig:       groupConfig,
+func setupMessageConsumer(kafkaAddress string, consumerGroup string, topic string, lagTolerance int64, log *logger.UPPLogger) *kafka.Consumer {
+	consumerConfig := kafka.ConsumerConfig{
+		BrokersConnectionString: kafkaAddress,
+		ConsumerGroup:           consumerGroup,
+		Options:                 kafka.DefaultConsumerOptions(),
 	}
 
-	consumer, err := kafka.NewConsumer(config)
-	if err != nil {
-		return nil, fmt.Errorf("cannot start queue consumer: %w", err)
+	kafkaTopic := []*kafka.Topic{
+		kafka.NewTopic(topic, kafka.WithLagTolerance(lagTolerance)),
 	}
-	return consumer, nil
+
+	return kafka.NewConsumer(consumerConfig, kafkaTopic, log)
 }
 
 func readConfigMap(jsonPath string) (originMap map[string]string, lifecycleMap map[string]string, messageType string, err error) {

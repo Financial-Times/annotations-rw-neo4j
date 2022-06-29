@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 
+	"github.com/Financial-Times/kafka-client-go/v3"
+
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/forwarder"
 
 	logger "github.com/Financial-Times/go-logger/v2"
-	"github.com/Financial-Times/kafka-client-go/kafka"
 	transactionidutils "github.com/Financial-Times/transactionid-utils-go"
 
 	"github.com/pkg/errors"
@@ -22,9 +23,16 @@ type queueMessage struct {
 	Annotations annotations.Annotations
 }
 
+type kafkaConsumer interface {
+	Start(func(message kafka.FTMessage))
+	Close() error
+	MonitorCheck() error
+	ConnectivityCheck() error
+}
+
 type queueHandler struct {
 	annotationsService annotations.Service
-	consumer           kafka.Consumer
+	consumer           kafkaConsumer
 	forwarder          forwarder.QueueForwarder
 	originMap          map[string]string
 	lifecycleMap       map[string]string
@@ -33,32 +41,36 @@ type queueHandler struct {
 }
 
 func (qh *queueHandler) Ingest() {
-	qh.consumer.StartListening(func(message kafka.FTMessage) error {
+	qh.consumer.Start(func(message kafka.FTMessage) {
 		tid, found := message.Headers[transactionidutils.TransactionIDHeader]
 		if !found {
-			return errors.New("Missing transaction id from message")
+			qh.log.Error("Missing transaction id from message")
+			return
 		}
 
 		originSystem, found := message.Headers["Origin-System-Id"]
 		if !found {
-			return errors.New("Missing Origini-System-Id header from message")
+			qh.log.Error("Missing Origini-System-Id header from message")
+			return
 		}
 
 		lifecycle, platformVersion, err := qh.getSourceFromHeader(originSystem)
 		if err != nil {
-			return err
+			qh.log.WithError(err).Error("Could not get source from header")
+			return
 		}
 
 		annMsg := new(queueMessage)
 		err = json.Unmarshal([]byte(message.Body), &annMsg)
 		if err != nil {
-			return errors.Errorf("Cannot process received message %s", tid)
+			qh.log.WithTransactionID(tid).Error("Cannot process received message", tid)
+			return
 		}
 
 		err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, tid, annMsg.Annotations)
 		if err != nil {
 			qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(annMsg.UUID).WithError(err).Error("Cannot write to Neo4j")
-			return errors.Wrapf(err, "Failed to write message with tid=%s and uuid=%s", tid, annMsg.UUID)
+			return
 		}
 
 		qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(annMsg.UUID).Infof("%s successfully written in Neo4j", qh.messageType)
@@ -66,9 +78,13 @@ func (qh *queueHandler) Ingest() {
 		//forward message to the next queue
 		if qh.forwarder != nil {
 			qh.log.WithTransactionID(tid).WithUUID(annMsg.UUID).Debug("Forwarding message to the next queue")
-			return qh.forwarder.SendMessage(tid, originSystem, platformVersion, annMsg.UUID, annMsg.Annotations)
+			err := qh.forwarder.SendMessage(tid, originSystem, platformVersion, annMsg.UUID, annMsg.Annotations)
+			if err != nil {
+				qh.log.WithError(err).WithUUID(annMsg.UUID).WithTransactionID(tid).Error("Could not forward a message to kafka")
+				return
+			}
+			return
 		}
-		return nil
 	})
 }
 
