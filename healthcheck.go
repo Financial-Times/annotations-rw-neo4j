@@ -7,7 +7,6 @@ import (
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 
 	fthealth "github.com/Financial-Times/go-fthealth/v1_1"
-	"github.com/Financial-Times/kafka-client-go/kafka"
 	"github.com/Financial-Times/service-status-go/gtg"
 )
 
@@ -15,13 +14,13 @@ type healthCheckHandler struct {
 	systemCode         string
 	appName            string
 	annotationsService annotations.Service
-	consumer           kafka.Consumer
+	consumer           kafkaConsumer
 }
 
 func (h healthCheckHandler) Health() func(w http.ResponseWriter, r *http.Request) {
 	checks := []fthealth.Check{h.writerCheck()}
 	if h.consumer != nil {
-		checks = append(checks, h.readQueueCheck())
+		checks = append(checks, h.readQueueCheck(), h.consumerLagCheck())
 	}
 	hc := fthealth.TimedHealthCheck{
 		HealthCheck: fthealth.HealthCheck{
@@ -78,6 +77,18 @@ func (h healthCheckHandler) writerCheck() fthealth.Check {
 	}
 }
 
+func (h healthCheckHandler) consumerLagCheck() fthealth.Check {
+	return fthealth.Check{
+		ID:               "consumer-lag-check",
+		Name:             "Kafka Consumer Lag Check",
+		Severity:         3,
+		BusinessImpact:   "Consumer is lagging behind when reading messages from the queue",
+		TechnicalSummary: "Read message queue is slow due to consumer exceeding the configured lag tolerance. Check if consumer is stuck",
+		PanicGuide:       "https://runbooks.in.ft.com/" + h.systemCode,
+		Checker:          h.kafkaMonitorCheck,
+	}
+}
+
 func (h healthCheckHandler) checkKafkaConnectivity() (string, error) {
 	if err := h.consumer.ConnectivityCheck(); err != nil {
 		return "Error connecting with Kafka", err
@@ -92,6 +103,13 @@ func (hc healthCheckHandler) Checker() (string, error) {
 		return "Error connecting to neo4j", err
 	}
 	return "Connectivity to neo4j is ok", nil
+}
+
+func (h healthCheckHandler) kafkaMonitorCheck() (string, error) {
+	if err := h.consumer.MonitorCheck(); err != nil {
+		return "", err
+	}
+	return "Kafka consumer status is healthy", nil
 }
 
 func gtgCheck(handler func() (string, error)) gtg.Status {

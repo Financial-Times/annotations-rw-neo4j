@@ -3,10 +3,9 @@ package main
 import (
 	"encoding/json"
 
+	"github.com/Financial-Times/kafka-client-go/v3"
+
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
-
-	"github.com/Financial-Times/kafka-client-go/kafka"
-
 	"github.com/stretchr/testify/mock"
 )
 
@@ -57,13 +56,18 @@ type mockConsumer struct {
 	err     error
 }
 
-func (mc mockConsumer) StartListening(messageHandler func(message kafka.FTMessage) error) {
-	_ = messageHandler(mc.message)
+func (mc mockConsumer) Start(messageHandler func(message kafka.FTMessage)) {
+	messageHandler(mc.message)
 }
 
-func (mc mockConsumer) Shutdown() {
+func (mc mockConsumer) Close() error {
+	return mc.err
 }
 
 func (mc mockConsumer) ConnectivityCheck() error {
+	return mc.err
+}
+
+func (mc mockConsumer) MonitorCheck() error {
 	return mc.err
 }

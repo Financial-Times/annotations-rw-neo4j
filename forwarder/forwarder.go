@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
-	"github.com/Financial-Times/kafka-client-go/kafka"
+	"github.com/Financial-Times/kafka-client-go/v3"
 
+	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/google/uuid"
 )
 
@@ -29,9 +29,13 @@ type QueueForwarder interface {
 	SendMessage(transactionID string, originSystem string, platformVersion string, uuid string, annotations annotations.Annotations) error
 }
 
+type kafkaProducer interface {
+	SendMessage(message kafka.FTMessage) error
+}
+
 // A Forwarder facilitates sending a message to Kafka via kafka.Producer.
 type Forwarder struct {
-	Producer    kafka.Producer
+	Producer    kafkaProducer
 	MessageType string
 }
 

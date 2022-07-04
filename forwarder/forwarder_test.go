@@ -11,7 +11,7 @@ import (
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/forwarder"
 
-	"github.com/Financial-Times/kafka-client-go/kafka"
+	"github.com/Financial-Times/kafka-client-go/v3"
 )
 
 type InputMessage struct {

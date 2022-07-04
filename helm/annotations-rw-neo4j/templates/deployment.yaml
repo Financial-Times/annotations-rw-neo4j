@@ -44,11 +44,6 @@ spec:
             configMapKeyRef:
               name: global-config
               key: neo4j.cluster.bolt.url
-        - name: ZOOKEEPER_ADDRESS
-          valueFrom:
-            configMapKeyRef:
-              name: global-config
-              key: zookeeper.url
         - name: SHOULD_CONSUME_MESSAGES
           value: "{{ .Values.env.SHOULD_CONSUME_MESSAGES }}"
         - name: SHOULD_FORWARD_MESSAGES
@@ -59,11 +54,13 @@ spec:
           value: {{ .Values.env.CONSUMER_TOPIC }}
         - name: PRODUCER_TOPIC
           value: {{ .Values.env.PRODUCER_TOPIC }}
-        - name: BROKER_ADDRESS
+        - name: KAFKA_LAG_TOLERANCE
+          value: "{{ .Values.env.KAFKA_LAG_TOLERANCE }}"
+        - name: KAFKA_ADDRESS
           valueFrom:
             configMapKeyRef:
               name: global-config
-              key: kafka.url
+              key: msk.kafka.broker.url
         - name: LIFECYCLE_CONFIG_PATH
           value: {{ .Values.env.LIFECYCLE_CONFIG_PATH }}
         ports:
