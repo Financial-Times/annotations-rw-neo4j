@@ -26,6 +26,7 @@ type QueueHandlerTestSuite struct {
 	lifecycleMap       map[string]string
 	tid                string
 	originSystem       string
+	messageType        string
 	log                *logger.UPPLogger
 }
 
@@ -43,7 +44,7 @@ func (suite *QueueHandlerTestSuite) SetupTest() {
 	assert.NoError(suite.T(), err, "Unexpected error")
 	suite.annotationsService = new(mockAnnotationsService)
 
-	suite.originMap, suite.lifecycleMap, _, err = readConfigMap("annotation-config.json")
+	suite.originMap, suite.lifecycleMap, suite.messageType, err = readConfigMap("annotation-config.json")
 	assert.NoError(suite.T(), err, "Unexpected config error")
 }
 
@@ -61,6 +62,7 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest() {
 		forwarder:          suite.forwarder,
 		originMap:          suite.originMap,
 		lifecycleMap:       suite.lifecycleMap,
+		messageType:        suite.messageType,
 		log:                suite.log,
 	}
 	qh.Ingest()
@@ -78,6 +80,7 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_ProducerNil() {
 		forwarder:          nil,
 		originMap:          suite.originMap,
 		lifecycleMap:       suite.lifecycleMap,
+		messageType:        suite.messageType,
 		log:                suite.log,
 	}
 	qh.Ingest()

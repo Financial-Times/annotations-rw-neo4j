@@ -14,13 +14,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Note: this will only work for annotation messages, and not for suggestion
-// because suggestions-rw-neo4j has in its config shouldConsumeMessages set to false
-// and therefore the code bellow is not executed
-
 type queueMessage struct {
 	UUID        string
-	Annotations annotations.Annotations
+	Annotations annotations.Annotations `json:"annotations,omitempty"`
+	Suggestions annotations.Annotations `json:"suggestions,omitempty"`
 }
 
 type kafkaConsumer interface {
@@ -67,7 +64,12 @@ func (qh *queueHandler) Ingest() {
 			return
 		}
 
-		err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, tid, annMsg.Annotations)
+		if qh.messageType == "Annotations" {
+			err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, tid, annMsg.Annotations)
+		} else {
+			err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, tid, annMsg.Suggestions)
+		}
+
 		if err != nil {
 			qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(annMsg.UUID).WithError(err).Error("Cannot write to Neo4j")
 			return
