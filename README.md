@@ -106,3 +106,4 @@ that functionality in this app.
 * Good to go: [http://localhost:8080/__gtg](http://localhost:8080/__gtg)
 * Build info: [http://localhost:8080/__build-info](http://localhost:8080/__build-info)
 * Ping: [http://localhost:8080/__ping](http://localhost:8080/__ping)
+test
