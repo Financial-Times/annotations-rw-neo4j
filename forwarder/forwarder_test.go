@@ -21,6 +21,7 @@ type InputMessage struct {
 
 const transactionID = "example-transaction-id"
 const originSystem = "http://cmdb.ft.com/systems/pac"
+const bookmark = "FB:kcwQnrEEnFpfSJ2PtiykK/JNh8oBozhIkA=="
 
 func TestSendMessage(t *testing.T) {
 	const expectedAnnotationsOutputBody = `{"payload":{"annotations":[{"thing":{"id":"http://api.ft.com/things/2cca9e2a-2248-3e48-abc1-93d718b91bbe","prefLabel":"China Politics \u0026 Policy","types":["http://www.ft.com/ontology/Topic"],"predicate":"majorMentions"},"provenances":[{"scores":[{"scoringSystem":"http://api.ft.com/scoringsystem/FT-RELEVANCE-SYSTEM","value":1},{"scoringSystem":"http://api.ft.com/scoringsystem/FT-CONFIDENCE-SYSTEM","value":1}]}]}],"lastModified":"%s","uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://pac.annotations-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
@@ -63,7 +64,7 @@ func TestSendMessage(t *testing.T) {
 				MessageType: test.messageType,
 			}
 
-			err = f.SendMessage(transactionID, originSystem, test.platformVersion, inputMessage.UUID, inputMessage.Annotations)
+			err = f.SendMessage(transactionID, originSystem, bookmark, test.platformVersion, inputMessage.UUID, inputMessage.Annotations)
 			if err != nil {
 				t.Error("Error sending message")
 			}
@@ -78,16 +79,20 @@ func TestSendMessage(t *testing.T) {
 			if res.Headers["Origin-System-Id"] != originSystem {
 				t.Errorf("Unexpected Kafka Origin-System-Id, expected `%s` but recevied `%s`", originSystem, res.Headers["Origin-System-Id"])
 			}
+			if res.Headers["Bookmark"] != bookmark {
+				t.Errorf("Unexpected Kafka Bookmark, expected `%s` but recevied `%s`", bookmark, res.Headers["Bookmark"])
+			}
 		})
 	}
 }
 
 func TestCreateHeaders(t *testing.T) {
-	headers := forwarder.CreateHeaders(transactionID, originSystem)
+	headers := forwarder.CreateHeaders(transactionID, originSystem, bookmark)
 
 	checkHeaders := map[string]string{
 		"X-Request-Id":     transactionID,
 		"Origin-System-Id": originSystem,
+		"Bookmark":         bookmark,
 		"Message-Type":     "concept-annotation",
 		"Content-Type":     "application/json",
 	}

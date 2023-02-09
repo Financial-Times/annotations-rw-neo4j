@@ -19,6 +19,7 @@ import (
 
 const (
 	lifecyclePropertyName = "annotationLifecycle"
+	bookmarkHeader        = "Bookmark"
 )
 
 //service def
@@ -53,7 +54,8 @@ func (hh *httpHandler) GetAnnotations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tid := transactionidutils.GetTransactionIDFromRequest(r)
-	annotations, found, err := hh.annotationsService.Read(uuid, tid, lifecycle)
+	bookmark := r.Header.Get(bookmarkHeader)
+	annotations, found, err := hh.annotationsService.Read(uuid, bookmark, lifecycle)
 	if err != nil {
 		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("failed getting annotations")
 		msg := fmt.Sprintf("Error getting annotations (%v)", err)
@@ -92,7 +94,7 @@ func (hh *httpHandler) DeleteAnnotations(w http.ResponseWriter, r *http.Request)
 	}
 
 	tid := transactionidutils.GetTransactionIDFromRequest(r)
-	found, err := hh.annotationsService.Delete(uuid, tid, lifecycle)
+	found, bookmark, err := hh.annotationsService.Delete(uuid, lifecycle)
 	if err != nil {
 		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("failed deleting annotations")
 		writeJSONError(w, err.Error(), http.StatusServiceUnavailable)
@@ -102,7 +104,7 @@ func (hh *httpHandler) DeleteAnnotations(w http.ResponseWriter, r *http.Request)
 		writeJSONError(w, fmt.Sprintf("No annotations found for content with uuid %s.", uuid), http.StatusNotFound)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Add(bookmarkHeader, bookmark)
 	w.WriteHeader(http.StatusNoContent)
 	w.Write([]byte(jsonMessage(fmt.Sprintf("Annotations for content %s deleted", uuid))))
 }
@@ -124,7 +126,8 @@ func (hh *httpHandler) CountAnnotations(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	count, err := hh.annotationsService.Count(lifecycle, platformVersion)
+	bookmark := r.Header.Get(bookmarkHeader)
+	count, err := hh.annotationsService.Count(lifecycle, bookmark, platformVersion)
 
 	w.Header().Add("Content-Type", "application/json")
 
@@ -186,7 +189,7 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tid := transactionidutils.GetTransactionIDFromRequest(r)
-	err = hh.annotationsService.Write(uuid, lifecycle, platformVersion, tid, anns)
+	bookmark, err := hh.annotationsService.Write(uuid, lifecycle, platformVersion, anns)
 	if errors.Is(err, annotations.UnsupportedPredicateErr) {
 		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("invalid predicate provided")
 		writeJSONError(w, "Please provide a valid predicate", http.StatusBadRequest)
@@ -208,7 +211,7 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 
 	if hh.forwarder != nil {
 		hh.log.WithTransactionID(tid).WithUUID(uuid).Debug("Forwarding message to the next queue")
-		err = hh.forwarder.SendMessage(tid, originSystem, platformVersion, uuid, anns)
+		err = hh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, uuid, anns)
 		if err != nil {
 			msg := "Failed to forward message to queue"
 			hh.log.WithTransactionID(tid).WithUUID(uuid).WithError(err).Error(msg)
@@ -218,6 +221,7 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Add(bookmarkHeader, bookmark)
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(jsonMessage(fmt.Sprintf("Annotations for content %s created", uuid))))
 	return

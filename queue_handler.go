@@ -64,10 +64,11 @@ func (qh *queueHandler) Ingest() {
 			return
 		}
 
+		var bookmark string
 		if qh.messageType == "Annotations" {
-			err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, tid, annMsg.Annotations)
+			bookmark, err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, annMsg.Annotations)
 		} else {
-			err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, tid, annMsg.Suggestions)
+			bookmark, err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, annMsg.Suggestions)
 		}
 
 		if err != nil {
@@ -80,7 +81,7 @@ func (qh *queueHandler) Ingest() {
 		//forward message to the next queue
 		if qh.forwarder != nil {
 			qh.log.WithTransactionID(tid).WithUUID(annMsg.UUID).Debug("Forwarding message to the next queue")
-			err := qh.forwarder.SendMessage(tid, originSystem, platformVersion, annMsg.UUID, annMsg.Annotations)
+			err := qh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, annMsg.UUID, annMsg.Annotations)
 			if err != nil {
 				qh.log.WithError(err).WithUUID(annMsg.UUID).WithTransactionID(tid).Error("Could not forward a message to kafka")
 				return
