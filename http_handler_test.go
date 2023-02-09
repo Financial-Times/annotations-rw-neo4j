@@ -24,6 +24,7 @@ const (
 	knownUUID           = "12345"
 	annotationLifecycle = "annotations-pac"
 	platformVersion     = "pac"
+	bookmark            = "bookmark"
 )
 
 type HttpHandlerTestSuite struct {
@@ -65,8 +66,8 @@ func TestHttpHandlerTestSuite(t *testing.T) {
 }
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_Success() {
-	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.tid, suite.annotations).Return(nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", platformVersion, knownUUID, suite.annotations).Return(nil).Once()
+	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.annotations).Return(bookmark, nil)
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(nil).Once()
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -104,7 +105,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_NotJson() {
 }
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_WriteFailed() {
-	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.tid, suite.annotations).Return(errors.New("Write failed"))
+	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.annotations).Return("", errors.New("Write failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -114,7 +115,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_WriteFailed() {
 }
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_InvalidPredicate() {
-	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.tid, suite.annotations).Return(annotations.UnsupportedPredicateErr)
+	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.annotations).Return("", annotations.UnsupportedPredicateErr)
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -124,8 +125,8 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_InvalidPredicate() {
 }
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_ForwardingFailed() {
-	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.tid, suite.annotations).Return(nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", platformVersion, knownUUID, suite.annotations).Return(errors.New("forwarding failed"))
+	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.annotations).Return(bookmark, nil)
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(errors.New("forwarding failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -170,7 +171,7 @@ func (suite *HttpHandlerTestSuite) TestGetHandler_InvalidLifecycle() {
 }
 
 func (suite *HttpHandlerTestSuite) TestDeleteHandler_Success() {
-	suite.annotationsService.On("Delete", knownUUID, mock.Anything, annotationLifecycle).Return(true, nil)
+	suite.annotationsService.On("Delete", knownUUID, annotationLifecycle).Return(true, bookmark, nil)
 	request := newRequest("DELETE", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", nil)
 	rec := httptest.NewRecorder()
 	router(&httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}, &suite.healthCheckHandler, suite.log).ServeHTTP(rec, request)
@@ -178,7 +179,7 @@ func (suite *HttpHandlerTestSuite) TestDeleteHandler_Success() {
 }
 
 func (suite *HttpHandlerTestSuite) TestDeleteHandler_NotFound() {
-	suite.annotationsService.On("Delete", knownUUID, mock.Anything, annotationLifecycle).Return(false, nil)
+	suite.annotationsService.On("Delete", knownUUID, annotationLifecycle).Return(false, bookmark, nil)
 	request := newRequest("DELETE", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", nil)
 	rec := httptest.NewRecorder()
 	router(&httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}, &suite.healthCheckHandler, suite.log).ServeHTTP(rec, request)
@@ -186,7 +187,7 @@ func (suite *HttpHandlerTestSuite) TestDeleteHandler_NotFound() {
 }
 
 func (suite *HttpHandlerTestSuite) TestDeleteHandler_DeleteError() {
-	suite.annotationsService.On("Delete", knownUUID, mock.Anything, annotationLifecycle).Return(false, errors.New("Delete error"))
+	suite.annotationsService.On("Delete", knownUUID, annotationLifecycle).Return(false, bookmark, errors.New("Delete error"))
 	request := newRequest("DELETE", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", nil)
 	rec := httptest.NewRecorder()
 	router(&httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}, &suite.healthCheckHandler, suite.log).ServeHTTP(rec, request)
@@ -194,7 +195,7 @@ func (suite *HttpHandlerTestSuite) TestDeleteHandler_DeleteError() {
 }
 
 func (suite *HttpHandlerTestSuite) TestCount_Success() {
-	suite.annotationsService.On("Count", annotationLifecycle, platformVersion).Return(10, nil)
+	suite.annotationsService.On("Count", annotationLifecycle, mock.Anything, platformVersion).Return(10, nil)
 	request := newRequest("GET", fmt.Sprintf("/content/annotations/%s/__count", annotationLifecycle), "application/json", nil)
 	rec := httptest.NewRecorder()
 	router(&httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}, &suite.healthCheckHandler, suite.log).ServeHTTP(rec, request)
@@ -202,7 +203,7 @@ func (suite *HttpHandlerTestSuite) TestCount_Success() {
 }
 
 func (suite *HttpHandlerTestSuite) TestCount_CountError() {
-	suite.annotationsService.On("Count", annotationLifecycle, platformVersion).Return(0, errors.New("Count error"))
+	suite.annotationsService.On("Count", annotationLifecycle, mock.Anything, platformVersion).Return(0, errors.New("Count error"))
 	request := newRequest("GET", fmt.Sprintf("/content/annotations/%s/__count", annotationLifecycle), "application/json", nil)
 	rec := httptest.NewRecorder()
 	handler := httpHandler{suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}

@@ -21,12 +21,12 @@ var UnsupportedPredicateErr = errors.New("Unsupported predicate")
 // The problem is that we have a list of things, and the uuid is for a related OTHER thing
 // TODO - move to implement a shared defined Service interface?
 type Service interface {
-	Write(contentUUID string, annotationLifecycle string, platformVersion string, tid string, thing interface{}) (err error)
-	Read(contentUUID string, tid string, annotationLifecycle string) (thing interface{}, found bool, err error)
-	Delete(contentUUID string, tid string, annotationLifecycle string) (found bool, err error)
+	Write(contentUUID string, annotationLifecycle string, platformVersion string, thing interface{}) (bookmark string, err error)
+	Read(contentUUID string, bookmark string, annotationLifecycle string) (thing interface{}, found bool, err error)
+	Delete(contentUUID string, annotationLifecycle string) (found bool, bookmark string, err error)
 	Check() (err error)
 	DecodeJSON(*json.Decoder) (thing interface{}, err error)
-	Count(annotationLifecycle string, platformVersion string) (int, error)
+	Count(annotationLifecycle string, bookmark string, platformVersion string) (int, error)
 	Initialise() error
 }
 
@@ -51,7 +51,7 @@ func (s service) DecodeJSON(dec *json.Decoder) (interface{}, error) {
 	return a, err
 }
 
-func (s service) Read(contentUUID string, tid string, annotationLifecycle string) (thing interface{}, found bool, err error) {
+func (s service) Read(contentUUID string, bookmark string, annotationLifecycle string) (thing interface{}, found bool, err error) {
 	results := []Annotation{}
 	//TODO shouldn't return Provenances if none of the scores, agentRole or atTime are set
 	statementTemplate := `
@@ -66,15 +66,15 @@ func (s service) Read(contentUUID string, tid string, annotationLifecycle string
 			RETURN thing, provenances ORDER BY thing.id`
 
 	statement := fmt.Sprintf(statementTemplate, relevanceScoringSystem, confidenceScoringSystem)
-	query := &cmneo4j.Query{
+	query := []*cmneo4j.Query{{
 		Cypher: statement,
 		Params: map[string]interface{}{
 			"contentUUID":         contentUUID,
 			"annotationLifecycle": annotationLifecycle,
 		},
 		Result: &results,
-	}
-	err = s.driver.Read(query)
+	}}
+	_, err = s.driver.ReadMultiple(query, []string{bookmark})
 	if errors.Is(err, cmneo4j.ErrNoResultsFound) {
 		return Annotations{}, false, nil
 	}
@@ -92,34 +92,35 @@ func (s service) Read(contentUUID string, tid string, annotationLifecycle string
 // Delete removes all the annotations for this content. Ignore the nodes on either end -
 // may leave nodes that are only 'things' inserted by this writer: clean up
 // as a result of this will need to happen externally if required
-func (s service) Delete(contentUUID string, tid string, annotationLifecycle string) (bool, error) {
+func (s service) Delete(contentUUID string, annotationLifecycle string) (bool, string, error) {
 	query := buildDeleteQuery(contentUUID, annotationLifecycle, true)
 
-	if err := s.driver.Write(query); err != nil {
-		return false, fmt.Errorf("error executing delete queries: %w", err)
+	bookmark, err := s.driver.WriteMultiple([]*cmneo4j.Query{query}, nil)
+	if err != nil {
+		return false, "", fmt.Errorf("error executing delete queries: %w", err)
 	}
 
 	stats, err := query.Summary()
 	if err != nil {
-		return false, fmt.Errorf("error running stats on delete queries: %w", err)
+		return false, "", fmt.Errorf("error running stats on delete queries: %w", err)
 	}
 
-	return stats.Counters().RelationshipsDeleted() > 0, err
+	return stats.Counters().RelationshipsDeleted() > 0, bookmark, err
 }
 
 // Write a set of annotations associated with a piece of content. Any annotations
 // already there will be removed
-func (s service) Write(contentUUID string, annotationLifecycle string, platformVersion string, tid string, thing interface{}) error {
+func (s service) Write(contentUUID string, annotationLifecycle string, platformVersion string, thing interface{}) (string, error) {
 	annotationsToWrite, ok := thing.(Annotations)
 	if ok == false {
-		return errors.New("thing is not of type Annotations")
+		return "", errors.New("thing is not of type Annotations")
 	}
 	if contentUUID == "" {
-		return errors.New("content uuid is required")
+		return "", errors.New("content uuid is required")
 	}
 
 	if err := validateAnnotations(&annotationsToWrite); err != nil {
-		return err
+		return "", err
 	}
 
 	queries := append([]*cmneo4j.Query{}, buildDeleteQuery(contentUUID, annotationLifecycle, false))
@@ -127,15 +128,16 @@ func (s service) Write(contentUUID string, annotationLifecycle string, platformV
 	for _, annotationToWrite := range annotationsToWrite {
 		query, err := createAnnotationQuery(contentUUID, annotationToWrite, platformVersion, annotationLifecycle)
 		if err != nil {
-			return fmt.Errorf("create annotation query failed: %w", err)
+			return "", fmt.Errorf("create annotation query failed: %w", err)
 		}
 		queries = append(queries, query)
 	}
 
-	if err := s.driver.Write(queries...); err != nil {
-		return fmt.Errorf("executing write queries in neo4j failed: %w", err)
+	bookmark, err := s.driver.WriteMultiple(queries, nil)
+	if err != nil {
+		return "", fmt.Errorf("executing write queries in neo4j failed: %w", err)
 	}
-	return nil
+	return bookmark, nil
 }
 
 // Check tests if the service can connect to neo4j by running a simple query
@@ -143,12 +145,12 @@ func (s service) Check() error {
 	return s.driver.VerifyConnectivity()
 }
 
-func (s service) Count(annotationLifecycle string, platformVersion string) (int, error) {
+func (s service) Count(annotationLifecycle string, bookmark string, platformVersion string) (int, error) {
 	var results []struct {
 		Count int `json:"c"`
 	}
 
-	query := &cmneo4j.Query{
+	query := []*cmneo4j.Query{{
 		Cypher: `MATCH ()-[r{platformVersion:$platformVersion}]->()
                 WHERE r.lifecycle = $lifecycle
                 OR r.lifecycle IS NULL
@@ -158,9 +160,9 @@ func (s service) Count(annotationLifecycle string, platformVersion string) (int,
 			"lifecycle":       annotationLifecycle,
 		},
 		Result: &results,
-	}
+	}}
 
-	err := s.driver.Read(query)
+	_, err := s.driver.ReadMultiple(query, []string{bookmark})
 	if errors.Is(err, cmneo4j.ErrNoResultsFound) {
 		return 0, nil
 	}

@@ -26,7 +26,7 @@ type outputMessage struct {
 
 // QueueForwarder is the interface implemented by types that can send annotation messages to a queue.
 type QueueForwarder interface {
-	SendMessage(transactionID string, originSystem string, platformVersion string, uuid string, annotations annotations.Annotations) error
+	SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations annotations.Annotations) error
 }
 
 type kafkaProducer interface {
@@ -40,8 +40,8 @@ type Forwarder struct {
 }
 
 // SendMessage marshals an annotations payload using the outputMessage format and sends it to a Kafka.
-func (f Forwarder) SendMessage(transactionID string, originSystem string, platformVersion string, uuid string, annotations annotations.Annotations) error {
-	headers := CreateHeaders(transactionID, originSystem)
+func (f Forwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations annotations.Annotations) error {
+	headers := CreateHeaders(transactionID, originSystem, bookmark)
 	body, err := f.prepareBody(platformVersion, uuid, annotations, headers["Message-Timestamp"])
 	if err != nil {
 		return err
@@ -73,7 +73,7 @@ func (f Forwarder) prepareBody(platformVersion string, uuid string, anns annotat
 
 // CreateHeaders returns the relevant map with all the necessary kafka.FTMessage headers
 // according to the specified transaction ID and origin system.
-func CreateHeaders(transactionID string, originSystem string) map[string]string {
+func CreateHeaders(transactionID string, originSystem string, bookmark string) map[string]string {
 	const dateFormat = "2006-01-02T15:04:05.000Z0700"
 	messageUUID := uuid.New()
 	return map[string]string{
@@ -83,5 +83,6 @@ func CreateHeaders(transactionID string, originSystem string) map[string]string 
 		"Message-Type":      "concept-annotation",
 		"Content-Type":      "application/json",
 		"Origin-System-Id":  originSystem,
+		"Neo4j-Bookmark":    bookmark,
 	}
 }
