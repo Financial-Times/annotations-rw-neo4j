@@ -286,7 +286,7 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 
 	_, err := annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, exampleConcepts(conceptUUID))
 	assert.NoError(err, "Failed to write annotation")
-	found, _, err := annotationsService.Delete(contentUUID, PACAnnotationLifecycle)
+	found, bookmark, err := annotationsService.Delete(contentUUID, PACAnnotationLifecycle)
 	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
 	assert.NoError(err, "Error deleting annotations for content uuid %s", contentUUID)
 
@@ -304,7 +304,7 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 		Result: &result,
 	}
 
-	readErr := driver.Read(getContentQuery)
+	bookmark, readErr := driver.ReadMultiple([]*cmneo4j.Query{getContentQuery}, []string{bookmark})
 	assert.True(errors.Is(readErr, cmneo4j.ErrNoResultsFound), "ErrNoResultsFound is expected")
 	assert.Empty(result)
 
@@ -318,7 +318,7 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 		Result: &result,
 	}
 
-	readErr = driver.Read(getContentQuery)
+	_, readErr = driver.ReadMultiple([]*cmneo4j.Query{getContentQuery}, []string{bookmark})
 	assert.NoError(readErr)
 	assert.NotEmpty(result)
 

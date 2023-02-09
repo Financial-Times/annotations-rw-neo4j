@@ -9,15 +9,56 @@ services:
         GITHUB_TOKEN: ${GITHUB_TOKEN}
     container_name: test-runner
     environment:
-      - NEO4J_TEST_URL=bolt://neo4j:7687
-    command: ["go", "test", "-mod=readonly", "-v", "-race", "-tags=integration", "./..."]
+      - NEO4J_TEST_URL=neo4j://core1:7687
+    command: ["go", "test", "-mod=readonly", "-race", "-tags=integration", "./..."]
     depends_on:
-      - neo4j
-  neo4j:
-    image: neo4j:4.3-enterprise
-    environment:
-          NEO4J_AUTH: none
-          NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      - core1
+      - core2
+      - core3
+  core1:
+    image: neo4j:4.4-enterprise
     ports:
-      - "7474:7474"
-      - "7687:7687"
+      - 7475:7474
+      - 7688:7687
+    environment:
+      - NEO4J_AUTH=none
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - EXTENDED_CONF=yes
+      - NEO4J_EDITION=docker_compose
+      - NEO4J_dbms_mode=CORE
+      - NEO4J_causal__clustering_discovery__type=LIST
+      - NEO4J_dbms_default__listen__address=core1
+      - NEO4J_dbms_default__advertised__address=core1
+      - NEO4J_causal__clustering_initial__discovery__members=core1:5000,core2:5000,core3:5000
+  core2:
+    image: neo4j:4.4-enterprise
+    ports:
+      - 7476:7474
+      - 7689:7687
+    environment:
+      - NEO4J_AUTH=none
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - EXTENDED_CONF=yes
+      - NEO4J_EDITION=docker_compose
+      - NEO4J_dbms_mode=CORE
+      - NEO4J_causal__clustering_discovery__type=LIST
+      - NEO4J_dbms_default__listen__address=core2
+      - NEO4J_dbms_default__advertised__address=core2
+      - NEO4J_causal__clustering_initial__discovery__members=core1:5000,core2:5000,core3:5000
+      - NEO4J_dbms_read__only=true
+  core3:
+    image: neo4j:4.4-enterprise
+    ports:
+      - 7477:7474
+      - 7690:7687
+    environment:
+      - NEO4J_AUTH=none
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - EXTENDED_CONF=yes
+      - NEO4J_EDITION=docker_compose
+      - NEO4J_dbms_mode=CORE
+      - NEO4J_causal__clustering_discovery__type=LIST
+      - NEO4J_dbms_default__listen__address=core3
+      - NEO4J_dbms_default__advertised__address=core3
+      - NEO4J_causal__clustering_initial__discovery__members=core1:5000,core2:5000,core3:5000
+      - NEO4J_dbms_read__only=true
