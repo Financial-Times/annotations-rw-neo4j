@@ -79,8 +79,8 @@ func TestSendMessage(t *testing.T) {
 			if res.Headers["Origin-System-Id"] != originSystem {
 				t.Errorf("Unexpected Kafka Origin-System-Id, expected `%s` but recevied `%s`", originSystem, res.Headers["Origin-System-Id"])
 			}
-			if res.Headers["Bookmark"] != bookmark {
-				t.Errorf("Unexpected Kafka Bookmark, expected `%s` but recevied `%s`", bookmark, res.Headers["Bookmark"])
+			if res.Headers["Neo4j-Bookmark"] != bookmark {
+				t.Errorf("Unexpected Kafka Neo4j-Bookmark, expected `%s` but recevied `%s`", bookmark, res.Headers["Neo4j-Bookmark"])
 			}
 		})
 	}
@@ -92,7 +92,7 @@ func TestCreateHeaders(t *testing.T) {
 	checkHeaders := map[string]string{
 		"X-Request-Id":     transactionID,
 		"Origin-System-Id": originSystem,
-		"Bookmark":         bookmark,
+		"Neo4j-Bookmark":   bookmark,
 		"Message-Type":     "concept-annotation",
 		"Content-Type":     "application/json",
 	}

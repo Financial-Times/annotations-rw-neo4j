@@ -19,7 +19,7 @@ import (
 
 const (
 	lifecyclePropertyName = "annotationLifecycle"
-	bookmarkHeader        = "Bookmark"
+	bookmarkHeader        = "Neo4j-Bookmark"
 )
 
 //service def

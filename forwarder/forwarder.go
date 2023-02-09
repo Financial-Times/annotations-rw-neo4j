@@ -83,6 +83,6 @@ func CreateHeaders(transactionID string, originSystem string, bookmark string) m
 		"Message-Type":      "concept-annotation",
 		"Content-Type":      "application/json",
 		"Origin-System-Id":  originSystem,
-		"Bookmark":          bookmark,
+		"Neo4j-Bookmark":    bookmark,
 	}
 }
