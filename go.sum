@@ -9,8 +9,6 @@ github.com/Financial-Times/http-handlers-go/v2 v2.1.0 h1:kBj41WrDXUGUiLHEjWI1zQU
 github.com/Financial-Times/http-handlers-go/v2 v2.1.0/go.mod h1:Tgkc7TqJXl/NFxB8eP8CX7YU5X01gbrL55LqNzo4YVY=
 github.com/Financial-Times/kafka-client-go/v3 v3.0.4 h1:7gfyzCpNclC6bpMaSAHlOvWsXhCMrG+VCTe2oknJoRo=
 github.com/Financial-Times/kafka-client-go/v3 v3.0.4/go.mod h1:+xSPZqQTS2iN13T2WxsL3IdqZz0BbaLZFJma1QfmZ3U=
-github.com/Financial-Times/neo-model-utils-go v0.0.0-20180712095719-aea1e95c8305 h1:ob+VRuAq7QGfqT4ccoH5Ru0nfnBmjmNgUEaLzXTzUNw=
-github.com/Financial-Times/neo-model-utils-go v0.0.0-20180712095719-aea1e95c8305/go.mod h1:HdCuBcOftPWj3SBix/6H9NbPQpur9F7stSF0MEROMcU=
 github.com/Financial-Times/service-status-go v0.0.0-20160323111542-3f5199736a3d h1:USNBTIof6vWGM49SYrxvC5Y8NqyDL3YuuYmID81ORZQ=
 github.com/Financial-Times/service-status-go v0.0.0-20160323111542-3f5199736a3d/go.mod h1:7zULC9rrq6KxFkpB3Y5zNVaEwrf1g2m3dvXJBPDXyvM=
 github.com/Financial-Times/transactionid-utils-go v0.2.0 h1:YcET5Hd1fUGWWpQSVszYUlAc15ca8tmjRetUuQKRqEQ=

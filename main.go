@@ -102,12 +102,16 @@ func main() {
 		Desc:   "Name of the service",
 		EnvVar: "APP_NAME",
 	})
-
 	appSystemCode := app.String(cli.StringOpt{
 		Name:   "appSystemCode",
 		Value:  "annotations-rw",
 		Desc:   "Name of the service",
 		EnvVar: "APP_SYSTEM_CODE",
+	})
+	publicAPIHost := app.String(cli.StringOpt{
+		Name:   "apiURL",
+		Desc:   "API Gateway URL used when building the thing ID url in the response, in the format scheme://host",
+		EnvVar: "API_HOST",
 	})
 
 	app.Action = func() {
@@ -116,7 +120,7 @@ func main() {
 		log.WithFields(map[string]interface{}{"port": *port, "neoURL": *neoURL}).Infof("Service %s has successfully started.", *appName)
 
 		dbLog := logger.NewUPPLogger(*appName+"-cmneo4j-driver", *dbDriverLogLevel)
-		annotationsService, err := setupAnnotationsService(*neoURL, dbLog)
+		annotationsService, err := setupAnnotationsService(*neoURL, *publicAPIHost, dbLog)
 		if err != nil {
 			log.WithError(err).Fatal("can't initialise annotations service")
 		}
@@ -191,13 +195,17 @@ func main() {
 	}
 }
 
-func setupAnnotationsService(neoURL string, dbLogger *logger.UPPLogger) (annotations.Service, error) {
+func setupAnnotationsService(neoURL, publicAPIURL string, dbLogger *logger.UPPLogger) (annotations.Service, error) {
 	driver, err := cmneo4j.NewDefaultDriver(neoURL, dbLogger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a new cmneo4j driver: %v", err)
 	}
 
-	annotationsService := annotations.NewCypherAnnotationsService(driver)
+	annotationsService, err := annotations.NewCypherAnnotationsService(driver, publicAPIURL)
+	if err != nil {
+		return nil, fmt.Errorf("creating annotations service: %w", err)
+	}
+
 	err = annotationsService.Initialise()
 	if err != nil {
 		return nil, fmt.Errorf("annotations service has not been initialised correctly: %w", err)

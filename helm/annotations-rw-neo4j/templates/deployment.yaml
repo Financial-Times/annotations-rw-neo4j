@@ -63,6 +63,8 @@ spec:
               key: msk.kafka.broker.url
         - name: LIFECYCLE_CONFIG_PATH
           value: {{ .Values.env.LIFECYCLE_CONFIG_PATH }}
+        - name: API_HOST
+          value: http://api.ft.com
         ports:
         - containerPort: 8080
         livenessProbe:

@@ -14,14 +14,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var annotationsService Service
-
 const (
 	brandUUID                = "8e21cbd4-e94b-497a-a43b-5b2309badeb3"
 	PACPlatformVersion       = "pac"
 	nextVideoPlatformVersion = "next-video"
 	contentLifecycle         = "content"
 	PACAnnotationLifecycle   = "annotations-pac"
+	apiHost                  = "http://api.ft.com"
 )
 
 func TestConstraintsApplied(t *testing.T) {
@@ -29,11 +28,12 @@ func TestConstraintsApplied(t *testing.T) {
 
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 	defer cleanDB(t, assert)
 
-	err := annotationsService.Initialise()
-	assert.NoError(err)
+	err = annotationsService.Initialise()
+	assert.NoError(err, "creating cypher annotations service failed")
 
 	testSetupQuery := &cmneo4j.Query{
 		Cypher: `MERGE (n:Thing {uuid:$contentUuid}) SET n :Thing`,
@@ -57,7 +57,8 @@ func TestConstraintsApplied(t *testing.T) {
 func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 
 	conceptWithoutID := Annotations{Annotation{
 		Thing: Thing{
@@ -79,15 +80,18 @@ func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 		},
 	}}
 
-	_, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, conceptWithoutID)
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, conceptWithoutID)
 	assert.Error(err, "Should have failed to write annotation")
 	_, ok := err.(ValidationError)
 	assert.True(ok, "Should have returned a validation error")
 }
 
 func TestWriteFailsForInvalidPredicate(t *testing.T) {
+	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
+
 	conceptWithInvalidPredicate := Annotation{
 		Thing: Thing{ID: fmt.Sprintf("http://api.ft.com/things/%s", oldConceptUUID),
 			PrefLabel: "prefLabel",
@@ -110,19 +114,20 @@ func TestWriteFailsForInvalidPredicate(t *testing.T) {
 		},
 	}
 
-	_, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, Annotations{conceptWithInvalidPredicate})
-	assert.EqualError(t, err, "create annotation query failed: Unsupported predicate")
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, Annotations{conceptWithInvalidPredicate})
+	assert.EqualError(err, "create annotation query failed: Unsupported predicate")
 }
 
 func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 	annotationsToDelete := exampleConcepts(conceptUUID)
 
 	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, annotationsToDelete)
 	assert.NoError(err, "Failed to write annotation")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToDelete)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToDelete)
 
 	deleted, bookmark, err := annotationsService.Delete(contentUUID, v2AnnotationLifecycle)
 	assert.True(deleted, "Didn't manage to delete annotations for content uuid %s: %s", contentUUID, err)
@@ -146,13 +151,14 @@ func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 func TestWriteAllValuesPresent(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
 	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, annotationsToWrite)
 	assert.NoError(err, "Failed to write annotation")
 
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToWrite)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToWrite)
 
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID})
 }
@@ -160,7 +166,8 @@ func TestWriteAllValuesPresent(t *testing.T) {
 func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithoutLifecycle(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 	defer cleanDB(t, assert)
 
 	testSetupQuery := &cmneo4j.Query{
@@ -174,8 +181,8 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithoutLifecy
 		},
 	}
 
-	err := driver.Write(testSetupQuery)
-	assert.NoError(err)
+	err = driver.Write(testSetupQuery)
+	assert.NoError(err, "creating cypher annotations service failed")
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
@@ -208,8 +215,10 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithoutLifecy
 func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLifeCycle(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 	defer cleanDB(t, assert)
+
 	contentQuery := &cmneo4j.Query{
 		Cypher: `MERGE (n:Thing {uuid:$contentUuid}) SET n :Thing
 		MERGE (b:Brand{uuid:$brandUuid}) SET b :Concept:Thing
@@ -222,7 +231,7 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLi
 		},
 	}
 
-	err := driver.Write(contentQuery)
+	err = driver.Write(contentQuery)
 	assert.NoError(err, "Error c for content uuid %s", contentUUID)
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
@@ -258,7 +267,8 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 
 	defer cleanDB(t, assert)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 
 	createContentQuery := &cmneo4j.Query{
 		Cypher: `MERGE (c:Content{uuid:$contentUuid}) SET c :Thing RETURN c.uuid`,
@@ -284,7 +294,7 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 
 	assert.NoError(driver.Write(contentQuery))
 
-	_, err := annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, exampleConcepts(conceptUUID))
+	_, err = annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, exampleConcepts(conceptUUID))
 	assert.NoError(err, "Failed to write annotation")
 	found, bookmark, err := annotationsService.Delete(contentUUID, PACAnnotationLifecycle)
 	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
@@ -340,7 +350,8 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 
 	multiConceptAnnotations := Annotations{
 		Annotation{
@@ -390,18 +401,19 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, multiConceptAnnotations)
 	assert.NoError(err, "Failed to write annotation")
 
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, contentUUID, v2AnnotationLifecycle, bookmark, multiConceptAnnotations)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, multiConceptAnnotations)
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID, secondConceptUUID})
 }
 
 func TestIfProvenanceGetsWrittenWithEmptyAgentRoleAndTimeValues(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 
 	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, conceptWithoutAgent)
 	assert.NoError(err, "Failed to write annotation")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, contentUUID, v2AnnotationLifecycle, bookmark, conceptWithoutAgent)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, conceptWithoutAgent)
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID})
 }
 
@@ -409,7 +421,8 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 	assert := assert.New(t)
 	defer cleanDB(t, assert)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 
 	contentQuery := &cmneo4j.Query{
 		Cypher: `CREATE (n:Thing {uuid:$contentUuid})
@@ -423,7 +436,7 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 		},
 	}
 
-	err := driver.Write(contentQuery)
+	err = driver.Write(contentQuery)
 	assert.NoError(err, "Error creating test data in database.")
 
 	_, err = annotationsService.Write(contentUUID, nextVideoAnnotationsLifecycle, nextVideoPlatformVersion, exampleConcepts(secondConceptUUID))
@@ -457,18 +470,19 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 func TestUpdateWillRemovePreviousAnnotations(t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
 	oldAnnotationsToWrite := exampleConcepts(oldConceptUUID)
 
 	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, oldAnnotationsToWrite)
 	assert.NoError(err, "Failed to write annotations")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, contentUUID, v2AnnotationLifecycle, bookmark, oldAnnotationsToWrite)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, oldAnnotationsToWrite)
 
 	updatedAnnotationsToWrite := exampleConcepts(conceptUUID)
 
 	bookmark, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, updatedAnnotationsToWrite)
 	assert.NoError(err, "Failed to write updated annotations")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, contentUUID, v2AnnotationLifecycle, bookmark, updatedAnnotationsToWrite)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, updatedAnnotationsToWrite)
 
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID, oldConceptUUID})
 }
@@ -489,9 +503,9 @@ func getNeo4jDriver(t *testing.T) *cmneo4j.Driver {
 	return driver
 }
 
-func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, contentUUID string, annotationLifecycle string, bookmark string, expectedAnnotations []Annotation) {
+func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, svc Service, contentUUID, annotationLifecycle, bookmark string, expectedAnnotations []Annotation) {
 	assert := assert.New(t)
-	storedThings, found, err := annotationsService.Read(contentUUID, bookmark, annotationLifecycle)
+	storedThings, found, err := svc.Read(contentUUID, bookmark, annotationLifecycle)
 	storedAnnotations := storedThings.(Annotations)
 
 	assert.NoError(err, "Error finding annotations for contentUUID %s", contentUUID)
@@ -514,7 +528,6 @@ func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, contentUU
 func checkNodeIsStillPresent(uuid string, t *testing.T) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
 	results := []struct {
 		UUID string `json:"uuid"`
 	}{}
@@ -552,7 +565,7 @@ func checkRelationship(t *testing.T, assert *assert.Assertions, contentID string
 
 	driver := getNeo4jDriver(t)
 	err := driver.Read(qs)
-	assert.NoError(err)
+	assert.NoError(err, "creating cypher annotations service failed")
 	assert.Equal(1, len(results), "More results found than expected!")
 	assert.Equal(1, results[0].Count, "No Relationship with Lifecycle found!")
 }
@@ -560,7 +573,9 @@ func checkRelationship(t *testing.T, assert *assert.Assertions, contentID string
 func cleanUp(t *testing.T, contentUUID string, annotationLifecycle string, conceptUUIDs []string) {
 	assert := assert.New(t)
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
+	assert.NoError(err, "creating cypher annotations service failed")
+
 	found, _, err := annotationsService.Delete(contentUUID, annotationLifecycle)
 	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
 	assert.NoError(err, "Error deleting annotations for content uuid %s", contentUUID)
@@ -576,7 +591,7 @@ func cleanUp(t *testing.T, contentUUID string, annotationLifecycle string, conce
 
 func cleanDB(t *testing.T, assert *assert.Assertions) {
 	driver := getNeo4jDriver(t)
-	annotationsService = NewCypherAnnotationsService(driver)
+
 	qs := []*cmneo4j.Query{
 		{
 			Cypher: "MATCH (mc:Thing {uuid: $contentUUID}) DETACH DELETE mc",
@@ -611,7 +626,7 @@ func cleanDB(t *testing.T, assert *assert.Assertions) {
 	}
 
 	err := driver.Write(qs...)
-	assert.NoError(err)
+	assert.NoError(err, "creating cypher annotations service failed")
 }
 
 func deleteNode(driver *cmneo4j.Driver, uuid string) error {
