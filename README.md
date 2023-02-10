@@ -25,14 +25,16 @@ Command line options:
 --logLevel                Logging level (DEBUG, INFO, WARN, ERROR) (env $LOG_LEVEL) (default "INFO")
 --dbDriverLogLevel        Db's driver logging level (DEBUG, INFO, WARN, ERROR) (env $DB_DRIVER_LOG_LEVEL) (default "WARN")
 --lifecycleConfigPath     Json Config file - containing two config maps: one for originHeader to lifecycle, another for lifecycle to platformVersion mappings.  (env $LIFECYCLE_CONFIG_PATH) (default "annotation-config.json")
---zookeeperAddress        Address of the zookeeper service (env $ZOOKEEPER_ADDRESS) (default "localhost:2181")
 --shouldConsumeMessages   Boolean value specifying if this service should consume messages from the specified topic (env $SHOULD_CONSUME_MESSAGES)
 --consumerGroup           Kafka consumer group name (env $CONSUMER_GROUP)
 --consumerTopic           Kafka consumer topic name (env $CONSUMER_TOPIC)
---brokerAddress           Kafka address (env $BROKER_ADDRESS) (default "localhost:9092")
+--kafkaLagTolerance       Kafka consumer lag tolerance (env $KAFKA_LAG_TOLERANCE) (default 0)
+--kafkaAddress            Kafka address (env $KAFKA_ADDRESS) (default "kafka:9092")
 --producerTopic           Topic to which received messages will be forwarded (env $PRODUCER_TOPIC) (default "PostPublicationMetadataEvents")
 --shouldForwardMessages   Decides if annotations messages should be forwarded to a post publication queue (env $SHOULD_FORWARD_MESSAGES) (default true)
 --appName                 Name of the service (env $APP_NAME) (default "annotations-rw")
+--appSystemCode           Name of the service (env $APP_SYSTEM_CODE) (default "annotations-rw")
+--apiURL                  API Gateway URL used when building the thing ID url in the response, in the format scheme://host (env $API_HOST)
 ```
 
 ## Running tests locally
