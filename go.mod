@@ -1,6 +1,6 @@
 module github.com/Financial-Times/annotations-rw-neo4j/v4
 
-go 1.17
+go 1.19
 
 require (
 	github.com/Financial-Times/cm-neo4j-driver v1.1.0
