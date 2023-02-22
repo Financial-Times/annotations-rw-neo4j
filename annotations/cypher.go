@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	cmneo4j "github.com/Financial-Times/cm-neo4j-driver"
-	"github.com/Financial-Times/neo-model-utils-go/mapper"
 )
 
 var uuidExtractRegex = regexp.MustCompile(".*/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$")
@@ -32,7 +33,8 @@ type Service interface {
 
 // holds the Neo4j-specific information
 type service struct {
-	driver *cmneo4j.Driver
+	driver       *cmneo4j.Driver
+	publicAPIURL string
 }
 
 const (
@@ -40,8 +42,13 @@ const (
 )
 
 // NewCypherAnnotationsService instantiate driver
-func NewCypherAnnotationsService(driver *cmneo4j.Driver) Service {
-	return service{driver: driver}
+func NewCypherAnnotationsService(driver *cmneo4j.Driver, publicAPIURL string) (Service, error) {
+	_, err := url.ParseRequestURI(publicAPIURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return service{driver: driver, publicAPIURL: publicAPIURL}, nil
 }
 
 // DecodeJSON decodes to a list of annotations, for ease of use this is a struct itself
@@ -83,7 +90,7 @@ func (s service) Read(contentUUID string, bookmark string, annotationLifecycle s
 	}
 
 	for idx := range results {
-		mapToResponseFormat(&results[idx])
+		mapToResponseFormat(&results[idx], s.publicAPIURL)
 	}
 
 	return Annotations(results), true, nil
@@ -333,7 +340,7 @@ func validateAnnotations(annotations *Annotations) error {
 	return nil
 }
 
-//ValidationError is thrown when the annotations are not valid because mandatory information is missing
+// ValidationError is thrown when the annotations are not valid because mandatory information is missing
 type ValidationError struct {
 	Msg string
 }
@@ -342,12 +349,16 @@ func (v ValidationError) Error() string {
 	return v.Msg
 }
 
-func mapToResponseFormat(ann *Annotation) {
-	ann.Thing.ID = mapper.IDURL(ann.Thing.ID)
+func mapToResponseFormat(ann *Annotation, publicAPIURL string) {
+	ann.Thing.ID = thingURL(ann.Thing.ID, publicAPIURL)
 	// We expect only ONE provenance - provenance value is considered valid even if the AgentRole is not specified. See: v1 - isClassifiedBy
 	for idx := range ann.Provenances {
 		if ann.Provenances[idx].AgentRole != "" {
-			ann.Provenances[idx].AgentRole = mapper.IDURL(ann.Provenances[idx].AgentRole)
+			ann.Provenances[idx].AgentRole = thingURL(ann.Provenances[idx].AgentRole, publicAPIURL)
 		}
 	}
+}
+
+func thingURL(uuid, baseURL string) string {
+	return strings.TrimRight(baseURL, "/") + "/things/" + uuid
 }

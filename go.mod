@@ -1,6 +1,6 @@
 module github.com/Financial-Times/annotations-rw-neo4j/v4
 
-go 1.17
+go 1.19
 
 require (
 	github.com/Financial-Times/cm-neo4j-driver v1.1.0
@@ -8,7 +8,6 @@ require (
 	github.com/Financial-Times/go-logger/v2 v2.0.1
 	github.com/Financial-Times/http-handlers-go/v2 v2.1.0
 	github.com/Financial-Times/kafka-client-go/v3 v3.0.4
-	github.com/Financial-Times/neo-model-utils-go v0.0.0-20180712095719-aea1e95c8305
 	github.com/Financial-Times/service-status-go v0.0.0-20160323111542-3f5199736a3d
 	github.com/Financial-Times/transactionid-utils-go v0.2.0
 	github.com/google/uuid v1.3.0
