@@ -1,9 +1,9 @@
 package annotations
 
-//Annotations represents a collection of Annotation instances
+// Annotations represents a collection of Annotation instances
 type Annotations []Annotation
 
-//Annotation is the main struct containing the annotations attributes
+// Annotation is the main struct containing the annotations attributes
 type Annotation struct {
 	ID                 string   `json:"id,omitempty"`
 	PrefLabel          string   `json:"prefLabel,omitempty"`

@@ -59,7 +59,6 @@ func (s service) DecodeJSON(dec *json.Decoder) (interface{}, error) {
 
 func (s service) Read(contentUUID string, bookmark string, annotationLifecycle string) (thing interface{}, found bool, err error) {
 	results := []Annotation{}
-	//TODO shouldn't return Provenances if none of the scores, agentRole or atTime are set
 	statement := `
 			MATCH (c:Thing{uuid:$contentUUID})-[rel{lifecycle:$annotationLifecycle}]->(cc:Thing)
 			RETURN 
