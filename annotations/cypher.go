@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
 	cmneo4j "github.com/Financial-Times/cm-neo4j-driver"
 )
@@ -61,18 +60,19 @@ func (s service) DecodeJSON(dec *json.Decoder) (interface{}, error) {
 func (s service) Read(contentUUID string, bookmark string, annotationLifecycle string) (thing interface{}, found bool, err error) {
 	results := []Annotation{}
 	//TODO shouldn't return Provenances if none of the scores, agentRole or atTime are set
-	statementTemplate := `
+	statement := `
 			MATCH (c:Thing{uuid:$contentUUID})-[rel{lifecycle:$annotationLifecycle}]->(cc:Thing)
-			WITH c, cc, rel, {id:cc.uuid,prefLabel:cc.prefLabel,types:labels(cc),predicate:type(rel)} as thing,
-			collect(
-				{scores:[
-					{scoringSystem:'%s', value:rel.relevanceScore},
-					{scoringSystem:'%s', value:rel.confidenceScore}],
-				agentRole:rel.annotatedBy,
-				atTime:rel.annotatedDate}) as provenances
-			RETURN thing, provenances ORDER BY thing.id`
+			RETURN 
+				cc.uuid as id,
+				cc.preflabel as prefLabel,
+				labels(cc) as types,
+				type(rel) as predicate,
+				rel.relevanceScore as relevanceScore,
+				rel.confidenceScore as confidenceScore,
+				rel.annotatedBy as annotatedBy,
+				rel.annotatedDate as annotatedDate
+			ORDER BY id`
 
-	statement := fmt.Sprintf(statementTemplate, relevanceScoringSystem, confidenceScoringSystem)
 	query := []*cmneo4j.Query{{
 		Cypher: statement,
 		Params: map[string]interface{}{
@@ -207,43 +207,29 @@ func getRelationshipFromPredicate(predicate string) (string, error) {
 }
 
 func createAnnotationQuery(contentUUID string, ann Annotation, platformVersion string, annotationLifecycle string) (*cmneo4j.Query, error) {
-	thingID, err := extractUUIDFromURI(ann.Thing.ID)
+	thingID, err := extractUUIDFromURI(ann.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	//todo temporary change to deal with multiple provenances
-	/*if len(ann.Provenances) > 1 {
-		return nil, errors.New("Cannot insert a MENTIONS annotation with multiple provenances")
-	}*/
-
-	var prov Provenance
 	params := map[string]interface{}{}
 	params["platformVersion"] = platformVersion
 	params["lifecycle"] = annotationLifecycle
 
-	if len(ann.Provenances) >= 1 {
-		prov = ann.Provenances[0]
-		annotatedBy, annotatedDateEpoch, relevanceScore, confidenceScore, supplied, err := extractDataFromProvenance(&prov)
-
+	if ann.AnnotatedBy != "" {
+		params["annotatedBy"], err = extractUUIDFromURI(ann.AnnotatedBy)
 		if err != nil {
 			return nil, err
 		}
-
-		if supplied == true {
-			if annotatedBy != "" {
-				params["annotatedBy"] = annotatedBy
-			}
-			if prov.AtTime != "" {
-				params["annotatedDateEpoch"] = annotatedDateEpoch
-				params["annotatedDate"] = prov.AtTime
-			}
-			params["relevanceScore"] = relevanceScore
-			params["confidenceScore"] = confidenceScore
-		}
 	}
+	if ann.AnnotatedDate != "" {
+		params["annotatedDateEpoch"] = ann.AnnotatedDateEpoch
+		params["annotatedDate"] = ann.AnnotatedDate
+	}
+	params["relevanceScore"] = ann.RelevanceScore
+	params["confidenceScore"] = ann.ConfidenceScore
 
-	relation, err := getRelationshipFromPredicate(ann.Thing.Predicate)
+	relation, err := getRelationshipFromPredicate(ann.Predicate)
 	if err != nil {
 		return nil, err
 	}
@@ -259,61 +245,6 @@ func createAnnotationQuery(contentUUID string, ann Annotation, platformVersion s
 	}
 
 	return query, nil
-}
-
-func extractDataFromProvenance(prov *Provenance) (string, int64, float64, float64, bool, error) {
-	if len(prov.Scores) == 0 {
-		return "", -1, -1, -1, false, nil
-	}
-	var annotatedBy string
-	var annotatedDateEpoch int64
-	var confidenceScore, relevanceScore float64
-	var err error
-	if prov.AgentRole != "" {
-		annotatedBy, err = extractUUIDFromURI(prov.AgentRole)
-	}
-	if prov.AtTime != "" {
-		annotatedDateEpoch, err = convertAnnotatedDateToEpoch(prov.AtTime)
-	}
-	relevanceScore, confidenceScore, err = extractScores(prov.Scores)
-
-	if err != nil {
-		return "", -1, -1, -1, true, err
-	}
-	return annotatedBy, annotatedDateEpoch, relevanceScore, confidenceScore, true, nil
-}
-
-func extractUUIDFromURI(uri string) (string, error) {
-	result := uuidExtractRegex.FindStringSubmatch(uri)
-	if len(result) == 2 {
-		return result[1], nil
-	}
-	return "", fmt.Errorf("couldn't extract uuid from uri %s", uri)
-}
-
-func convertAnnotatedDateToEpoch(annotatedDateString string) (int64, error) {
-	datetimeEpoch, err := time.Parse(time.RFC3339, annotatedDateString)
-
-	if err != nil {
-		return 0, err
-	}
-
-	return datetimeEpoch.Unix(), nil
-}
-
-func extractScores(scores []Score) (float64, float64, error) {
-	var relevanceScore, confidenceScore float64
-	for _, score := range scores {
-		scoringSystem := score.ScoringSystem
-		value := score.Value
-		switch scoringSystem {
-		case relevanceScoringSystem:
-			relevanceScore = value
-		case confidenceScoringSystem:
-			confidenceScore = value
-		}
-	}
-	return relevanceScore, confidenceScore, nil
 }
 
 func buildDeleteQuery(contentUUID string, annotationLifecycle string, includeStats bool) *cmneo4j.Query {
@@ -333,7 +264,7 @@ func buildDeleteQuery(contentUUID string, annotationLifecycle string, includeSta
 func validateAnnotations(annotations *Annotations) error {
 	//TODO - for consistency, we should probably just not create the annotation?
 	for _, annotation := range *annotations {
-		if annotation.Thing.ID == "" {
+		if annotation.ID == "" {
 			return ValidationError{fmt.Sprintf("Concept uuid missing for annotation %+v", annotation)}
 		}
 	}
@@ -350,15 +281,20 @@ func (v ValidationError) Error() string {
 }
 
 func mapToResponseFormat(ann *Annotation, publicAPIURL string) {
-	ann.Thing.ID = thingURL(ann.Thing.ID, publicAPIURL)
-	// We expect only ONE provenance - provenance value is considered valid even if the AgentRole is not specified. See: v1 - isClassifiedBy
-	for idx := range ann.Provenances {
-		if ann.Provenances[idx].AgentRole != "" {
-			ann.Provenances[idx].AgentRole = thingURL(ann.Provenances[idx].AgentRole, publicAPIURL)
-		}
+	ann.ID = thingURL(ann.ID, publicAPIURL)
+	if ann.AnnotatedBy != "" {
+		ann.AnnotatedBy = thingURL(ann.AnnotatedBy, publicAPIURL)
 	}
 }
 
 func thingURL(uuid, baseURL string) string {
 	return strings.TrimRight(baseURL, "/") + "/things/" + uuid
+}
+
+func extractUUIDFromURI(uri string) (string, error) {
+	result := uuidExtractRegex.FindStringSubmatch(uri)
+	if len(result) == 2 {
+		return result[1], nil
+	}
+	return "", fmt.Errorf("couldn't extract uuid from uri %s", uri)
 }

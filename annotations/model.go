@@ -3,37 +3,18 @@ package annotations
 //Annotations represents a collection of Annotation instances
 type Annotations []Annotation
 
-//Annotation is the main struct used to create and return structures
+//Annotation is the main struct containing the annotations attributes
 type Annotation struct {
-	Thing       Thing        `json:"thing,omitempty"`
-	Provenances []Provenance `json:"provenances,omitempty"`
+	ID                 string   `json:"id,omitempty"`
+	PrefLabel          string   `json:"prefLabel,omitempty"`
+	Types              []string `json:"types,omitempty"`
+	Predicate          string   `json:"predicate,omitempty"`
+	RelevanceScore     float64  `json:"relevanceScore,omitempty"`
+	ConfidenceScore    float64  `json:"confidenceScore,omitempty"`
+	AnnotatedBy        string   `json:"annotatedBy,omitempty"`
+	AnnotatedDate      string   `json:"annotatedDate,omitempty"`
+	AnnotatedDateEpoch int64    `json:"annotatedDateEpoch,omitempty"`
 }
-
-//Thing represents a concept being linked to
-type Thing struct {
-	ID        string   `json:"id,omitempty"`
-	PrefLabel string   `json:"prefLabel,omitempty"`
-	Types     []string `json:"types,omitempty"`
-	Predicate string   `json:"predicate,omitempty"`
-}
-
-//Provenance indicates the scores and where they came from
-type Provenance struct {
-	Scores    []Score `json:"scores,omitempty"`
-	AgentRole string  `json:"agentRole,omitempty"`
-	AtTime    string  `json:"atTime,omitempty"`
-}
-
-//Score represents one of our scores for the annotation
-type Score struct {
-	ScoringSystem string  `json:"scoringSystem,omitempty"`
-	Value         float64 `json:"value,omitempty"`
-}
-
-const (
-	relevanceScoringSystem  = "http://api.ft.com/scoringsystem/FT-RELEVANCE-SYSTEM"
-	confidenceScoringSystem = "http://api.ft.com/scoringsystem/FT-CONFIDENCE-SYSTEM"
-)
 
 var relations = map[string]string{
 	"mentions":                "MENTIONS",

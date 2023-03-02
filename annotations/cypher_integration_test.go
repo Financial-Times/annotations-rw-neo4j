@@ -61,23 +61,16 @@ func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 
 	conceptWithoutID := Annotations{Annotation{
-		Thing: Thing{
-			PrefLabel: "prefLabel",
-			Types: []string{
-				"http://www.ft.com/ontology/organisation/Organisation",
-				"http://www.ft.com/ontology/core/Thing",
-				"http://www.ft.com/ontology/concept/Concept",
-			}},
-		Provenances: []Provenance{
-			{
-				Scores: []Score{
-					{ScoringSystem: "http://api.ft.com/scoringsystem/FT-RELEVANCE-SYSTEM", Value: 0.9},
-					{ScoringSystem: "http://api.ft.com/scoringsystem/FT-CONFIDENCE-SYSTEM", Value: 0.8},
-				},
-				AgentRole: "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
-				AtTime:    "2016-01-01T19:43:47.314Z",
-			},
+		PrefLabel: "prefLabel",
+		Types: []string{
+			"http://www.ft.com/ontology/organisation/Organisation",
+			"http://www.ft.com/ontology/core/Thing",
+			"http://www.ft.com/ontology/concept/Concept",
 		},
+		RelevanceScore:  0.9,
+		ConfidenceScore: 0.8,
+		AnnotatedBy:     "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
+		AnnotatedDate:   "2016-01-01T19:43:47.314Z",
 	}}
 
 	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, conceptWithoutID)
@@ -93,25 +86,18 @@ func TestWriteFailsForInvalidPredicate(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 
 	conceptWithInvalidPredicate := Annotation{
-		Thing: Thing{ID: fmt.Sprintf("http://api.ft.com/things/%s", oldConceptUUID),
-			PrefLabel: "prefLabel",
-			Types: []string{
-				"http://www.ft.com/ontology/person/Person",
-				"http://www.ft.com/ontology/core/Thing",
-				"http://www.ft.com/ontology/concept/Concept",
-			},
-			Predicate: "hasAFakePredicate",
+		ID:        fmt.Sprintf("http://api.ft.com/things/%s", oldConceptUUID),
+		PrefLabel: "prefLabel",
+		Types: []string{
+			"http://www.ft.com/ontology/person/Person",
+			"http://www.ft.com/ontology/core/Thing",
+			"http://www.ft.com/ontology/concept/Concept",
 		},
-		Provenances: []Provenance{
-			{
-				Scores: []Score{
-					{ScoringSystem: "http://api.ft.com/scoringsystem/FT-RELEVANCE-SYSTEM", Value: 0.9},
-					{ScoringSystem: "http://api.ft.com/scoringsystem/FT-CONFIDENCE-SYSTEM", Value: 0.8},
-				},
-				AgentRole: "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
-				AtTime:    "2016-01-01T19:43:47.314Z",
-			},
-		},
+		Predicate:       "hasAFakePredicate",
+		RelevanceScore:  0.9,
+		ConfidenceScore: 0.8,
+		AnnotatedBy:     "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
+		AnnotatedDate:   "2016-01-01T19:43:47.314Z",
 	}
 
 	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, Annotations{conceptWithInvalidPredicate})
@@ -355,46 +341,32 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 
 	multiConceptAnnotations := Annotations{
 		Annotation{
-			Thing: Thing{ID: getURI(conceptUUID),
-				PrefLabel: "prefLabel",
-				Types: []string{
-					"http://www.ft.com/ontology/product/Brand",
-					"http://www.ft.com/ontology/core/Thing",
-					"http://www.ft.com/ontology/concept/Concept",
-				},
-				Predicate: "hasBrand",
+			ID:        getURI(conceptUUID),
+			PrefLabel: "prefLabel",
+			Types: []string{
+				"http://www.ft.com/ontology/product/Brand",
+				"http://www.ft.com/ontology/core/Thing",
+				"http://www.ft.com/ontology/concept/Concept",
 			},
-			Provenances: []Provenance{
-				{
-					Scores: []Score{
-						{ScoringSystem: relevanceScoringSystem, Value: 0.9},
-						{ScoringSystem: confidenceScoringSystem, Value: 0.8},
-					},
-					AgentRole: "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
-					AtTime:    "2016-01-01T19:43:47.314Z",
-				},
-			},
+			Predicate:       "hasBrand",
+			RelevanceScore:  0.9,
+			ConfidenceScore: 0.8,
+			AnnotatedBy:     "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
+			AnnotatedDate:   "2016-01-01T19:43:47.314Z",
 		},
 		Annotation{
-			Thing: Thing{ID: getURI(secondConceptUUID),
-				PrefLabel: "prefLabel",
-				Types: []string{
-					"http://www.ft.com/ontology/organisation/Organisation",
-					"http://www.ft.com/ontology/core/Thing",
-					"http://www.ft.com/ontology/concept/Concept",
-				},
-				Predicate: "mentions",
+			ID:        getURI(secondConceptUUID),
+			PrefLabel: "prefLabel",
+			Types: []string{
+				"http://www.ft.com/ontology/organisation/Organisation",
+				"http://www.ft.com/ontology/core/Thing",
+				"http://www.ft.com/ontology/concept/Concept",
 			},
-			Provenances: []Provenance{
-				{
-					Scores: []Score{
-						{ScoringSystem: relevanceScoringSystem, Value: 0.4},
-						{ScoringSystem: confidenceScoringSystem, Value: 0.5},
-					},
-					AgentRole: "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
-					AtTime:    "2016-01-01T19:43:47.314Z",
-				},
-			},
+			Predicate:       "mentions",
+			RelevanceScore:  0.4,
+			ConfidenceScore: 0.5,
+			AnnotatedBy:     "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
+			AnnotatedDate:   "2016-01-01T19:43:47.314Z",
 		},
 	}
 
@@ -403,18 +375,6 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 
 	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, multiConceptAnnotations)
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID, secondConceptUUID})
-}
-
-func TestIfProvenanceGetsWrittenWithEmptyAgentRoleAndTimeValues(t *testing.T) {
-	assert := assert.New(t)
-	driver := getNeo4jDriver(t)
-	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
-	assert.NoError(err, "creating cypher annotations service failed")
-
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, conceptWithoutAgent)
-	assert.NoError(err, "Failed to write annotation")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, conceptWithoutAgent)
-	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID})
 }
 
 func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
@@ -513,15 +473,16 @@ func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, svc Servi
 	assert.Equal(len(expectedAnnotations), len(storedAnnotations), "Didn't get the same number of annotations")
 	for idx, expectedAnnotation := range expectedAnnotations {
 		storedAnnotation := storedAnnotations[idx]
-		assert.EqualValues(expectedAnnotation.Provenances, storedAnnotation.Provenances, "Provenances not the same")
-
 		// In annotations write, we don't store anything other than ID for the concept (so type will only be 'Thing' and pref label will not
 		// be present UNLESS the concept has been written by some other system)
-		assert.Equal(expectedAnnotation.Thing.ID, storedAnnotation.Thing.ID, "Thing ID not the same")
-
-		expectedPredicate, err := getRelationshipFromPredicate(expectedAnnotation.Thing.Predicate)
-		assert.NoError(err, "error getting relationship from predicate %s", expectedAnnotation.Thing.Predicate)
-		assert.Equal(expectedPredicate, storedAnnotation.Thing.Predicate, "Thing Predicates not the same")
+		assert.Equal(expectedAnnotation.ID, storedAnnotation.ID, "ID is not the same")
+		expectedPredicate, err := getRelationshipFromPredicate(expectedAnnotation.Predicate)
+		assert.NoError(err, "error getting relationship from predicate %s", expectedAnnotation.Predicate)
+		assert.Equal(expectedPredicate, storedAnnotation.Predicate, "Predicates are not the same")
+		assert.Equal(expectedAnnotation.RelevanceScore, storedAnnotation.RelevanceScore, "Relevance score is not the same")
+		assert.Equal(expectedAnnotation.ConfidenceScore, storedAnnotation.ConfidenceScore, "Confidence score is not the same")
+		assert.Equal(expectedAnnotation.AnnotatedBy, storedAnnotation.AnnotatedBy, "AnnotatedBy is not the same")
+		assert.Equal(expectedAnnotation.AnnotatedDate, storedAnnotation.AnnotatedDate, "AnnotatedDate is not the same")
 	}
 }
 
