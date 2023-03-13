@@ -100,7 +100,7 @@ func TestCreateAnnotationQueryWithPredicate(t *testing.T) {
 func TestCreateAnnotationQueryWithoutPredicate(t *testing.T) {
 	assert := assert.New(t)
 	annotation := exampleConcept(oldConceptUUID)
-	annotation.Thing.Predicate = ""
+	annotation.Predicate = ""
 
 	_, err := createAnnotationQuery(contentUUID, annotation, v2PlatformVersion, v2AnnotationLifecycle)
 	assert.True(errors.Is(err, UnsupportedPredicateErr), "Creating annotation without predicate is not allowed.")

@@ -75,12 +75,6 @@ Example:
     curl -XPUT -H "X-Request-Id: 123" -H "Content-Type: application/json" localhost:8080/content/3fa70485-3a57-3b9b-9449-774b001cd965/annotations/annotations-pac --data
     "@annotations/examplePutBody.json"
 
-NB: Although provenances are supplied is a list, we don't expect to get more than one provenance: we will take the scores from that one
-and apply them to the relationship that we are creating for that annotation.
-
-If there is no provenance, or the provenance is incomplete (e.g. no agent role) we'll still
-create the relationship, it just won't have score, agent and time properties.
-
 ### GET
 /content/{annotatedContentId}/annotations/{annotations-lifecycle}
 This internal read should return what got written (i.e., this isn't the public annotations read API) - for the specified annotations-lifecycle.
