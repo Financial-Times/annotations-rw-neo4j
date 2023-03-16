@@ -27,7 +27,7 @@ Command line options:
 --lifecycleConfigPath     Json Config file - containing two config maps: one for originHeader to lifecycle, another for lifecycle to platformVersion mappings.  (env $LIFECYCLE_CONFIG_PATH) (default "annotation-config.json")
 --shouldConsumeMessages   Boolean value specifying if this service should consume messages from the specified topic (env $SHOULD_CONSUME_MESSAGES)
 --consumerGroup           Kafka consumer group name (env $CONSUMER_GROUP)
---consumerTopic           Kafka consumer topic name (env $CONSUMER_TOPIC)
+--consumerTopics          Kafka consumer topic names (env $CONSUMER_TOPICS)
 --kafkaLagTolerance       Kafka consumer lag tolerance (env $KAFKA_LAG_TOLERANCE) (default 0)
 --kafkaAddress            Kafka address (env $KAFKA_ADDRESS) (default "kafka:9092")
 --producerTopic           Topic to which received messages will be forwarded (env $PRODUCER_TOPIC) (default "PostPublicationMetadataEvents")

@@ -50,8 +50,8 @@ spec:
           value: "{{ .Values.env.SHOULD_FORWARD_MESSAGES }}"
         - name: CONSUMER_GROUP
           value: {{ .Values.env.CONSUMER_GROUP }}
-        - name: CONSUMER_TOPIC
-          value: {{ .Values.env.CONSUMER_TOPIC }}
+        - name: CONSUMER_TOPICS
+          value: {{ .Values.env.CONSUMER_TOPICS }}
         - name: PRODUCER_TOPIC
           value: {{ .Values.env.PRODUCER_TOPIC }}
         - name: KAFKA_LAG_TOLERANCE

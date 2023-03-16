@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"path"
 	"regexp"
 	"strings"
 
@@ -198,7 +199,7 @@ func createAnnotationRelationship(relation string) (statement string) {
 }
 
 func getRelationshipFromPredicate(predicate string) (string, error) {
-	r, ok := relations[predicate]
+	r, ok := relations[extractPredicateFromURI(predicate)]
 	if !ok {
 		return "", UnsupportedPredicateErr
 	}
@@ -296,4 +297,9 @@ func extractUUIDFromURI(uri string) (string, error) {
 		return result[1], nil
 	}
 	return "", fmt.Errorf("couldn't extract uuid from uri %s", uri)
+}
+
+func extractPredicateFromURI(uri string) string {
+	_, result := path.Split(uri)
+	return result
 }
