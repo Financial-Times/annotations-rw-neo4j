@@ -59,7 +59,7 @@ func (qh *queueHandler) Ingest() {
 		// Ignoring Video messages from NativeCmsMetadataPublicationEvents topic as the corresponding ones produced from
 		// the upp-next-video-annotations-mapper would be ingested from the ConceptAnnotations topic
 		if originSystem == nextVideoOrigin && message.Headers["Message-Type"] == cmsMessageType {
-			qh.log.Infof("Ignoring message with Origin-System-Id: %v and Message-Type: %v", nextVideoOrigin, cmsMessageType)
+			qh.log.WithField("Message-Type", cmsMessageType).WithField("Origin-System-Id", nextVideoOrigin).Info("Ignoring message")
 			return
 		}
 
