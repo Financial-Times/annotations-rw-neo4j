@@ -68,10 +68,10 @@ func main() {
 		Desc:   "Kafka consumer group name",
 		EnvVar: "CONSUMER_GROUP",
 	})
-	consumerTopic := app.String(cli.StringOpt{
-		Name:   "consumerTopic",
-		Desc:   "Kafka consumer topic name",
-		EnvVar: "CONSUMER_TOPIC",
+	consumerTopics := app.Strings(cli.StringsOpt{
+		Name:   "consumerTopics",
+		Desc:   "Kafka consumer topics",
+		EnvVar: "CONSUMER_TOPICS",
 	})
 	kafkaLagTolerance := app.Int(cli.IntOpt{
 		Name:   "kafkaLagTolerance",
@@ -155,7 +155,7 @@ func main() {
 
 		var qh queueHandler
 		if *shouldConsumeMessages {
-			consumer := setupMessageConsumer(*kafkaAddress, *consumerGroup, *consumerTopic, int64(*kafkaLagTolerance), log)
+			consumer := setupMessageConsumer(*kafkaAddress, *consumerGroup, *consumerTopics, int64(*kafkaLagTolerance), log)
 
 			healtcheckHandler.consumer = consumer
 
@@ -227,18 +227,19 @@ func setupMessageProducer(brokerAddress string, producerTopic string, log *logge
 	return producer
 }
 
-func setupMessageConsumer(kafkaAddress string, consumerGroup string, topic string, lagTolerance int64, log *logger.UPPLogger) *kafka.Consumer {
+func setupMessageConsumer(kafkaAddress string, consumerGroup string, topics []string, lagTolerance int64, log *logger.UPPLogger) *kafka.Consumer {
 	consumerConfig := kafka.ConsumerConfig{
 		BrokersConnectionString: kafkaAddress,
 		ConsumerGroup:           consumerGroup,
 		Options:                 kafka.DefaultConsumerOptions(),
 	}
 
-	kafkaTopic := []*kafka.Topic{
-		kafka.NewTopic(topic, kafka.WithLagTolerance(lagTolerance)),
+	var kafkaTopics []*kafka.Topic
+	for _, topic := range topics {
+		kafkaTopics = append(kafkaTopics, kafka.NewTopic(topic, kafka.WithLagTolerance(lagTolerance)))
 	}
 
-	return kafka.NewConsumer(consumerConfig, kafkaTopic, log)
+	return kafka.NewConsumer(consumerConfig, kafkaTopics, log)
 }
 
 func readConfigMap(jsonPath string) (originMap map[string]string, lifecycleMap map[string]string, messageType string, err error) {

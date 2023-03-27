@@ -14,6 +14,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	nextVideoOrigin = "http://cmdb.ft.com/systems/next-video-editor"
+	cmsMessageType  = "cms-content-published"
+)
+
 type queueMessage struct {
 	UUID        string
 	Annotations annotations.Annotations `json:"annotations,omitempty"`
@@ -47,7 +52,14 @@ func (qh *queueHandler) Ingest() {
 
 		originSystem, found := message.Headers["Origin-System-Id"]
 		if !found {
-			qh.log.Error("Missing Origini-System-Id header from message")
+			qh.log.Error("Missing Origin-System-Id header from message")
+			return
+		}
+
+		// Ignoring Video messages from NativeCmsMetadataPublicationEvents topic as the corresponding ones produced from
+		// the upp-next-video-annotations-mapper would be ingested from the ConceptAnnotations topic
+		if originSystem == nextVideoOrigin && message.Headers["Message-Type"] == cmsMessageType {
+			qh.log.WithField("Message-Type", cmsMessageType).WithField("Origin-System-Id", nextVideoOrigin).Info("Ignoring message")
 			return
 		}
 
