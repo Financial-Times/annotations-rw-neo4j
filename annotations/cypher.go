@@ -226,8 +226,12 @@ func createAnnotationQuery(contentUUID string, ann Annotation, platformVersion s
 		params["annotatedDateEpoch"] = ann.AnnotatedDateEpoch
 		params["annotatedDate"] = ann.AnnotatedDate
 	}
-	params["relevanceScore"] = ann.RelevanceScore
-	params["confidenceScore"] = ann.ConfidenceScore
+	if ann.RelevanceScore != 0.0 {
+		params["relevanceScore"] = ann.RelevanceScore
+	}
+	if ann.ConfidenceScore != 0.0 {
+		params["confidenceScore"] = ann.ConfidenceScore
+	}
 
 	relation, err := getRelationshipFromPredicate(ann.Predicate)
 	if err != nil {
