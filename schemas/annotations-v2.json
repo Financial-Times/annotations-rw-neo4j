@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://cm-delivery-prod.ft.com/schema/annotations-v2+json",
+  "title": "V2 Annotations",
+  "type": "object",
+  "description": "Schema for V2 Annotations",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": ".*/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",
+      "description": "ID of the related concept"
+    },
+    "prefLabel": {
+      "type": "string",
+      "description": "PrefLabel of the related concept"
+    },
+    "types": {
+      "type": "array",
+      "description": "Types of the related concept",
+      "items": {
+        "type": "string",
+        "enum": [
+          "http://www.ft.com/ontology/core/Thing",
+          "http://www.ft.com/ontology/concept/Concept",
+          "http://www.ft.com/ontology/person/Person",
+          "http://www.ft.com/ontology/organisation/Organisation"
+        ]
+      }
+    },
+    "predicate": {
+      "type": "string",
+      "description": "Predicate of the annotation",
+      "enum": [
+        "mentions"
+      ]
+    },
+    "relevanceScore": {
+      "type": "number",
+      "description": "Relevance score of the annotation"
+    },
+    "confidenceScore": {
+      "type": "number",
+      "description": "Confidence score of the annotation"
+    },
+    "annotatedBy": {
+      "type": "string",
+      "description": "The entity that created the annotation"
+    },
+    "annotatedDate": {
+      "type": "date-time",
+      "description": "The creation date of the annotation"
+    },
+    "annotatedDateEpoch": {
+      "type": "integer",
+      "description": "The creation date of the annotation in Unix Epoch Time"
+    }
+  },
+  "required": [
+    "id",
+    "prefLabel",
+    "types",
+    "predicate",
+    "relevanceScore",
+    "confidenceScore",
+    "annotatedBy",
+    "annotatedDate",
+    "annotatedDateEpoch"
+  ],
+  "additionalProperties": false
+}

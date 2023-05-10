@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http://cm-delivery-prod.ft.com/schema/predicates+json",
+  "title": "Predicate constraints",
+  "type": "object",
+  "description": "Schema for Predicate Constraints",
+  "properties": {
+    "isClassifiedBy": {
+      "type": "array",
+      "description": "Allowed concept types for isClassifiedBy predicate",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Genre",
+          "Brand"
+        ]
+      }
+    },
+    "hasAuthor": {
+      "type": "array",
+      "description": "Allowed concept types for hasAuthor predicate",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Person"
+        ]
+      }
+    },
+    "hasContributor": {
+      "type": "array",
+      "description": "Allowed concept types for hasContributor predicate",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Person"
+        ]
+      }
+    },
+    "about": {
+      "type": "array",
+      "description": "Allowed concept types for about predicate",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Person",
+          "Topic",
+          "Organisation",
+          "Location"
+        ]
+      }
+    },
+    "hasDisplayTag": {
+      "type": "array",
+      "description": "Allowed concept types for hasDisplayTag predicate",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Person",
+          "Topic",
+          "Organisation",
+          "Location"
+        ]
+      }
+    },
+    "mentions": {
+      "type": "string",
+      "description": "Allowed concept types for mentions predicate",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Person",
+          "Topic",
+          "Organisation",
+          "Location"
+        ]
+      }
+    }
+  }
+}
