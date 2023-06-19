@@ -10,6 +10,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/Financial-Times/annotations-rw-neo4j/v4/ontology"
+
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/forwarder"
 	cmneo4j "github.com/Financial-Times/cm-neo4j-driver"
@@ -144,7 +146,10 @@ func main() {
 			}
 		}
 
+		validator := ontology.NewSchemaValidator(log)
+
 		hh := httpHandler{
+			validator:          validator.GetJSONValidator(),
 			annotationsService: annotationsService,
 			forwarder:          f,
 			originMap:          originMap,
@@ -160,6 +165,7 @@ func main() {
 			healtcheckHandler.consumer = consumer
 
 			qh = queueHandler{
+				validator:          validator.GetJSONValidator(),
 				annotationsService: annotationsService,
 				consumer:           consumer,
 				forwarder:          f,

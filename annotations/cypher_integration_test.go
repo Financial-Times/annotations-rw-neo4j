@@ -4,10 +4,14 @@
 package annotations
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"testing"
+
+	"github.com/Financial-Times/annotations-rw-neo4j/v4/ontology"
 
 	cmneo4j "github.com/Financial-Times/cm-neo4j-driver"
 	logger "github.com/Financial-Times/go-logger/v2"
@@ -15,12 +19,19 @@ import (
 )
 
 const (
-	brandUUID                = "8e21cbd4-e94b-497a-a43b-5b2309badeb3"
-	PACPlatformVersion       = "pac"
-	nextVideoPlatformVersion = "next-video"
-	contentLifecycle         = "content"
-	PACAnnotationLifecycle   = "annotations-pac"
-	apiHost                  = "http://api.ft.com"
+	brandUUID                     = "8e21cbd4-e94b-497a-a43b-5b2309badeb3"
+	PACPlatformVersion            = "pac"
+	nextVideoPlatformVersion      = "next-video"
+	nextVideoAnnotationsLifecycle = "next-video"
+	contentLifecycle              = "content"
+	PACAnnotationLifecycle        = "annotations-pac"
+	apiHost                       = "http://api.ft.com"
+	v2AnnotationLifecycle         = "annotations-v2"
+	v2PlatformVersion             = "v2"
+	contentUUID                   = "32b089d2-2aae-403d-be6e-877404f586cf"
+	oldConceptUUID                = "ad28ddc7-4743-4ed3-9fad-5012b61fb919"
+	conceptUUID                   = "a7732a22-3884-4bfe-9761-fef161e41d69"
+	secondConceptUUID             = "c834adfa-10c9-4748-8a21-c08537172706"
 )
 
 func TestConstraintsApplied(t *testing.T) {
@@ -60,7 +71,7 @@ func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
 	assert.NoError(err, "creating cypher annotations service failed")
 
-	conceptWithoutID := Annotations{Annotation{
+	conceptWithoutID := ontology.Annotations{ontology.Annotation{
 		PrefLabel: "prefLabel",
 		Types: []string{
 			"http://www.ft.com/ontology/organisation/Organisation",
@@ -73,35 +84,8 @@ func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 		AnnotatedDate:   "2016-01-01T19:43:47.314Z",
 	}}
 
-	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, conceptWithoutID)
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, conceptWithoutID))
 	assert.Error(err, "Should have failed to write annotation")
-	_, ok := err.(ValidationError)
-	assert.True(ok, "Should have returned a validation error")
-}
-
-func TestWriteFailsForInvalidPredicate(t *testing.T) {
-	assert := assert.New(t)
-	driver := getNeo4jDriver(t)
-	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
-	assert.NoError(err, "creating cypher annotations service failed")
-
-	conceptWithInvalidPredicate := Annotation{
-		ID:        fmt.Sprintf("http://api.ft.com/things/%s", oldConceptUUID),
-		PrefLabel: "prefLabel",
-		Types: []string{
-			"http://www.ft.com/ontology/person/Person",
-			"http://www.ft.com/ontology/core/Thing",
-			"http://www.ft.com/ontology/concept/Concept",
-		},
-		Predicate:       "hasAFakePredicate",
-		RelevanceScore:  0.9,
-		ConfidenceScore: 0.8,
-		AnnotatedBy:     "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
-		AnnotatedDate:   "2016-01-01T19:43:47.314Z",
-	}
-
-	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, Annotations{conceptWithInvalidPredicate})
-	assert.EqualError(err, "create annotation query failed: Unsupported predicate")
 }
 
 func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
@@ -111,7 +95,7 @@ func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 	annotationsToDelete := exampleConcepts(conceptUUID)
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, annotationsToDelete)
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToDelete))
 	assert.NoError(err, "Failed to write annotation")
 	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToDelete)
 
@@ -121,7 +105,7 @@ func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 
 	anns, found, err := annotationsService.Read(contentUUID, bookmark, v2AnnotationLifecycle)
 
-	assert.Equal(Annotations{}, anns, "Found annotation for content %s when it should have been deleted", contentUUID)
+	assert.Equal(ontology.Annotations{}, anns, "Found annotation for content %s when it should have been deleted", contentUUID)
 	assert.False(found, "Found annotation for content %s when it should have been deleted", contentUUID)
 	assert.NoError(err, "Error trying to find annotation for content %s", contentUUID)
 
@@ -141,7 +125,7 @@ func TestWriteAllValuesPresent(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, annotationsToWrite)
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToWrite))
 	assert.NoError(err, "Failed to write annotation")
 
 	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToWrite)
@@ -172,7 +156,7 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithoutLifecy
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
-	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, annotationsToWrite)
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToWrite))
 	assert.NoError(err, "Failed to write annotation")
 	checkRelationship(t, assert, contentUUID, "v2")
 
@@ -222,7 +206,7 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLi
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
-	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, annotationsToWrite)
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToWrite))
 	assert.NoError(err, "Failed to write annotation")
 	checkRelationship(t, assert, contentUUID, "v2")
 
@@ -280,7 +264,7 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 
 	assert.NoError(driver.Write(contentQuery))
 
-	_, err = annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, exampleConcepts(conceptUUID))
+	_, err = annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, convertAnnotations(t, exampleConcepts(conceptUUID)))
 	assert.NoError(err, "Failed to write annotation")
 	found, bookmark, err := annotationsService.Delete(contentUUID, PACAnnotationLifecycle)
 	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
@@ -339,8 +323,8 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 	annotationsService, err := NewCypherAnnotationsService(driver, apiHost)
 	assert.NoError(err, "creating cypher annotations service failed")
 
-	multiConceptAnnotations := Annotations{
-		Annotation{
+	multiConceptAnnotations := ontology.Annotations{
+		ontology.Annotation{
 			ID:        getURI(conceptUUID),
 			PrefLabel: "prefLabel",
 			Types: []string{
@@ -354,7 +338,7 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 			AnnotatedBy:     "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
 			AnnotatedDate:   "2016-01-01T19:43:47.314Z",
 		},
-		Annotation{
+		ontology.Annotation{
 			ID:        getURI(secondConceptUUID),
 			PrefLabel: "prefLabel",
 			Types: []string{
@@ -370,7 +354,7 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 		},
 	}
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, multiConceptAnnotations)
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, multiConceptAnnotations))
 	assert.NoError(err, "Failed to write annotation")
 
 	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, multiConceptAnnotations)
@@ -399,7 +383,7 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 	err = driver.Write(contentQuery)
 	assert.NoError(err, "Error creating test data in database.")
 
-	_, err = annotationsService.Write(contentUUID, nextVideoAnnotationsLifecycle, nextVideoPlatformVersion, exampleConcepts(secondConceptUUID))
+	_, err = annotationsService.Write(contentUUID, nextVideoAnnotationsLifecycle, nextVideoPlatformVersion, convertAnnotations(t, exampleConcepts(secondConceptUUID)))
 	assert.NoError(err, "Failed to write annotation.")
 
 	result := []struct {
@@ -434,13 +418,13 @@ func TestUpdateWillRemovePreviousAnnotations(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 	oldAnnotationsToWrite := exampleConcepts(oldConceptUUID)
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, oldAnnotationsToWrite)
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, oldAnnotationsToWrite))
 	assert.NoError(err, "Failed to write annotations")
 	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, oldAnnotationsToWrite)
 
 	updatedAnnotationsToWrite := exampleConcepts(conceptUUID)
 
-	bookmark, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, updatedAnnotationsToWrite)
+	bookmark, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, updatedAnnotationsToWrite))
 	assert.NoError(err, "Failed to write updated annotations")
 	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, updatedAnnotationsToWrite)
 
@@ -463,21 +447,22 @@ func getNeo4jDriver(t *testing.T) *cmneo4j.Driver {
 	return driver
 }
 
-func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, svc Service, contentUUID, annotationLifecycle, bookmark string, expectedAnnotations []Annotation) {
+// nolint:all
+func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, svc Service, contentUUID, annotationLifecycle, bookmark string, expectedAnnotations []ontology.Annotation) {
 	assert := assert.New(t)
 	storedThings, found, err := svc.Read(contentUUID, bookmark, annotationLifecycle)
-	storedAnnotations := storedThings.(Annotations)
+	storedAnnotations := storedThings.(*[]ontology.Annotation)
 
 	assert.NoError(err, "Error finding annotations for contentUUID %s", contentUUID)
 	assert.True(found, "Didn't find annotations for contentUUID %s", contentUUID)
-	assert.Equal(len(expectedAnnotations), len(storedAnnotations), "Didn't get the same number of annotations")
-	for idx, expectedAnnotation := range expectedAnnotations {
-		storedAnnotation := storedAnnotations[idx]
+	assert.Equal(len(expectedAnnotations), len(*storedAnnotations), "Didn't get the same number of annotations")
+
+	for idx, storedAnnotation := range *storedAnnotations {
+		expectedAnnotation := expectedAnnotations[idx]
 		// In annotations write, we don't store anything other than ID for the concept (so type will only be 'Thing' and pref label will not
 		// be present UNLESS the concept has been written by some other system)
 		assert.Equal(expectedAnnotation.ID, storedAnnotation.ID, "ID is not the same")
-		expectedPredicate, err := getRelationshipFromPredicate(expectedAnnotation.Predicate)
-		assert.NoError(err, "error getting relationship from predicate %s", expectedAnnotation.Predicate)
+		expectedPredicate := getRelationshipFromPredicate(expectedAnnotation.Predicate)
 		assert.Equal(expectedPredicate, storedAnnotation.Predicate, "Predicates are not the same")
 		assert.Equal(expectedAnnotation.RelevanceScore, storedAnnotation.RelevanceScore, "Relevance score is not the same")
 		assert.Equal(expectedAnnotation.ConfidenceScore, storedAnnotation.ConfidenceScore, "Confidence score is not the same")
@@ -604,6 +589,55 @@ func deleteNode(driver *cmneo4j.Driver, uuid string) error {
 	return driver.Write(query)
 }
 
-func exampleConcepts(uuid string) Annotations {
-	return Annotations{exampleConcept(uuid)}
+func exampleConcepts(uuid string) ontology.Annotations {
+	return ontology.Annotations{
+		ontology.Annotation{
+			ID:        getURI(uuid),
+			PrefLabel: "prefLabel",
+			Types: []string{
+				"http://www.ft.com/ontology/organisation/Organisation",
+				"http://www.ft.com/ontology/core/Thing",
+				"http://www.ft.com/ontology/concept/Concept",
+			},
+			Predicate:       "mentions",
+			RelevanceScore:  0.9,
+			ConfidenceScore: 0.8,
+			AnnotatedBy:     "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
+			AnnotatedDate:   "2016-01-01T19:43:47.314Z",
+		},
+	}
+}
+
+func getURI(uuid string) string {
+	return fmt.Sprintf("http://api.ft.com/things/%s", uuid)
+}
+
+func convertAnnotations(t *testing.T, anns ontology.Annotations) []interface{} {
+	var annSlice []interface{}
+	for _, ann := range anns {
+		var annMap map[string]interface{}
+		data, err := json.Marshal(ann)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = json.Unmarshal(data, &annMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+		annSlice = append(annSlice, annMap)
+	}
+	return annSlice
+}
+
+func getRelationshipFromPredicate(predicate string) string {
+	r, ok := ontology.Relations[extractPredicateFromURI(predicate)]
+	if !ok {
+		return ""
+	}
+	return r
+}
+
+func extractPredicateFromURI(uri string) string {
+	_, result := path.Split(uri)
+	return result
 }

@@ -10,3 +10,5 @@ env:
   CONSUMER_TOPICS: ConceptSuggestions
   KAFKA_LAG_TOLERANCE: 100
   LIFECYCLE_CONFIG_PATH: suggestion-config.json
+  JSON_SCHEMA_NAME: annotations-v2.json
+  CONCEPT_PROPERTIES: "id;prefLabel;types"

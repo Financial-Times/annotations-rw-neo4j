@@ -4,12 +4,13 @@ go 1.19
 
 require (
 	github.com/Financial-Times/cm-neo4j-driver v1.1.0
-	github.com/Financial-Times/go-fthealth v0.0.0-20180807113633-3d8eb430d5b5
+	github.com/Financial-Times/go-fthealth v0.0.0-20200609161010-4c53fbef65fa
 	github.com/Financial-Times/go-logger/v2 v2.0.1
 	github.com/Financial-Times/http-handlers-go/v2 v2.1.0
 	github.com/Financial-Times/kafka-client-go/v3 v3.0.4
-	github.com/Financial-Times/service-status-go v0.0.0-20160323111542-3f5199736a3d
+	github.com/Financial-Times/service-status-go v0.0.0-20210115125138-41b7375f9b94
 	github.com/Financial-Times/transactionid-utils-go v0.2.0
+	github.com/Financial-Times/upp-content-validator-kit/v2 v2.1.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/jawher/mow.cli v1.0.4
@@ -28,7 +29,7 @@ require (
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
-	github.com/hashicorp/go-version v1.0.0 // indirect
+	github.com/hashicorp/go-version v1.3.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect
@@ -38,6 +39,7 @@ require (
 	github.com/neo4j/neo4j-go-driver/v4 v4.3.3 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/santhosh-tekuri/jsonschema v1.2.4 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect

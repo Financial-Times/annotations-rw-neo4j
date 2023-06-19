@@ -3,6 +3,8 @@ github.com/Financial-Times/cm-neo4j-driver v1.1.0 h1:9TZgyE7Vl8iuH0MRQlrVLkjzLFw
 github.com/Financial-Times/cm-neo4j-driver v1.1.0/go.mod h1:fQ77C8A+6I+ihwe6Ob8Y7sIzU3s/DTrjBZJGVQOeum0=
 github.com/Financial-Times/go-fthealth v0.0.0-20180807113633-3d8eb430d5b5 h1:XH5h45aAyG1bAFBYmkgJkT4q13CbkCJ+gj9+rIfzuL8=
 github.com/Financial-Times/go-fthealth v0.0.0-20180807113633-3d8eb430d5b5/go.mod h1:gpAzq6W5rCheYlY32JOIxS/VjVcYHbC2PkMzQngHT9c=
+github.com/Financial-Times/go-fthealth v0.0.0-20200609161010-4c53fbef65fa h1:jhrRhI2ihDmhAhmCucnabU6gyuQIDBcId7kKjnyp7Ec=
+github.com/Financial-Times/go-fthealth v0.0.0-20200609161010-4c53fbef65fa/go.mod h1:gpAzq6W5rCheYlY32JOIxS/VjVcYHbC2PkMzQngHT9c=
 github.com/Financial-Times/go-logger/v2 v2.0.1 h1:iekEfSsUtlkg+YkXTZo+/fIN2VbZ2/3Hl9yolP3z5X8=
 github.com/Financial-Times/go-logger/v2 v2.0.1/go.mod h1:Jpky5JYSX7xjGUClfA9hEMDmn40tUbfQQITjVIFGQiM=
 github.com/Financial-Times/http-handlers-go/v2 v2.1.0 h1:kBj41WrDXUGUiLHEjWI1zQUbRTNEw0JxSaaXQwZkib8=
@@ -11,8 +13,12 @@ github.com/Financial-Times/kafka-client-go/v3 v3.0.4 h1:7gfyzCpNclC6bpMaSAHlOvWs
 github.com/Financial-Times/kafka-client-go/v3 v3.0.4/go.mod h1:+xSPZqQTS2iN13T2WxsL3IdqZz0BbaLZFJma1QfmZ3U=
 github.com/Financial-Times/service-status-go v0.0.0-20160323111542-3f5199736a3d h1:USNBTIof6vWGM49SYrxvC5Y8NqyDL3YuuYmID81ORZQ=
 github.com/Financial-Times/service-status-go v0.0.0-20160323111542-3f5199736a3d/go.mod h1:7zULC9rrq6KxFkpB3Y5zNVaEwrf1g2m3dvXJBPDXyvM=
+github.com/Financial-Times/service-status-go v0.0.0-20210115125138-41b7375f9b94 h1:C4nQYbczJmMKAf6FtEh0FouoU7YN4fX9APKc8Xdcqso=
+github.com/Financial-Times/service-status-go v0.0.0-20210115125138-41b7375f9b94/go.mod h1:7zULC9rrq6KxFkpB3Y5zNVaEwrf1g2m3dvXJBPDXyvM=
 github.com/Financial-Times/transactionid-utils-go v0.2.0 h1:YcET5Hd1fUGWWpQSVszYUlAc15ca8tmjRetUuQKRqEQ=
 github.com/Financial-Times/transactionid-utils-go v0.2.0/go.mod h1:tPAcAFs/dR6Q7hBDGNyUyixHRvg/n9NW/JTq8C58oZ0=
+github.com/Financial-Times/upp-content-validator-kit/v2 v2.1.0 h1:lUGYnjWZeKswxfuyb9ISB5gIwOuSVdRjxyvu6Rdhu4s=
+github.com/Financial-Times/upp-content-validator-kit/v2 v2.1.0/go.mod h1:dQZyseh4naqsRHU5RaRa9E1GIuZHnM+1RxwqZWw9g/4=
 github.com/Shopify/sarama v1.33.0 h1:2K4mB9M4fo46sAM7t6QTsmSO8dLX1OqznLM7vn3OjZ8=
 github.com/Shopify/sarama v1.33.0/go.mod h1:lYO7LwEBkE0iAeTl94UfPSrDaavFzSFlmn+5isARATQ=
 github.com/Shopify/toxiproxy/v2 v2.3.0 h1:62YkpiP4bzdhKMH+6uC5E95y608k3zDwdzuBMsnn3uQ=
@@ -68,6 +74,8 @@ github.com/hashicorp/go-uuid v1.0.2 h1:cfejS+Tpcp13yd5nYHWDI6qVCny6wyX2Mt5SGur2I
 github.com/hashicorp/go-uuid v1.0.2/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
 github.com/hashicorp/go-version v1.0.0 h1:21MVWPKDphxa7ineQQTrCU5brh7OuVVAzGOCnnCPtE8=
 github.com/hashicorp/go-version v1.0.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+github.com/hashicorp/go-version v1.3.0 h1:McDWVJIU/y+u1BRV06dPaLfLCaT7fUTJLp5r04x7iNw=
+github.com/hashicorp/go-version v1.3.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/jawher/mow.cli v1.0.4 h1:hKjm95J7foZ2ngT8tGb15Aq9rj751R7IUDjG+5e3cGA=
 github.com/jawher/mow.cli v1.0.4/go.mod h1:5hQj2V8g+qYmLUVWqu4Wuja1pI57M83EChYLVZ0sMKk=
@@ -117,6 +125,8 @@ github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqn
 github.com/rogpeppe/go-internal v1.6.1 h1:/FiVV8dS/e+YqF2JvO3yXRFbBLTIuSDkuC7aBOAvL+k=
 github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTEfhy4qGm1nDQc=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
+github.com/santhosh-tekuri/jsonschema v1.2.4 h1:hNhW8e7t+H1vgY+1QeEQpveR6D4+OwKPXCfD2aieJis=
+github.com/santhosh-tekuri/jsonschema v1.2.4/go.mod h1:TEAUOeZSmIxTTuHatJzrvARHiuO9LYd+cIxzgEHCQI4=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/sirupsen/logrus v1.0.5/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjMPG0dEzc=
 github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE=

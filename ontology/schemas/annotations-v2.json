@@ -47,18 +47,17 @@
       "description": "The entity that created the annotation"
     },
     "annotatedDate": {
-      "type": "date-time",
+      "type": "string",
+      "format": "date-time",
       "description": "The creation date of the annotation"
     },
     "annotatedDateEpoch": {
-      "type": "integer",
+      "type": "number",
       "description": "The creation date of the annotation in Unix Epoch Time"
     }
   },
   "required": [
     "id",
-    "prefLabel",
-    "types",
     "predicate",
     "relevanceScore",
     "confidenceScore",

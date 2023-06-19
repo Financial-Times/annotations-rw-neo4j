@@ -65,6 +65,12 @@ spec:
           value: {{ .Values.env.LIFECYCLE_CONFIG_PATH }}
         - name: API_HOST
           value: http://api.ft.com
+        - name: JSON_SCHEMAS_PATH
+          value: "{{ .Values.env.JSON_SCHEMAS_PATH }}"
+        - name: JSON_SCHEMA_NAME
+          value: "{{ .Values.env.JSON_SCHEMA_NAME }}"
+        - name: CONCEPT_PROPERTIES
+          value: "{{ .Values.env.CONCEPT_PROPERTIES }}"
         ports:
         - containerPort: 8080
         livenessProbe:
