@@ -96,8 +96,18 @@ func (s service) Write(contentUUID string, annotationLifecycle string, platformV
 
 	queries := append([]*cmneo4j.Query{}, ontology.BuildDeleteQuery(contentUUID, annotationLifecycle, false))
 
-	for _, annotationToWrite := range anns.([]interface{}) {
-		query, err := ontology.CreateAnnotationQuery(contentUUID, annotationToWrite.(map[string]interface{}), platformVersion, annotationLifecycle)
+	annotations, ok := anns.([]interface{})
+	if !ok {
+		return "", errors.New("error in casting annotations")
+	}
+
+	for _, annotationToWrite := range annotations {
+		annotation, ok := annotationToWrite.(map[string]interface{})
+		if !ok {
+			return "", errors.New("error in casting annotation")
+		}
+
+		query, err := ontology.CreateAnnotationQuery(contentUUID, annotation, platformVersion, annotationLifecycle)
 		if err != nil {
 			return "", fmt.Errorf("create annotation query failed: %w", err)
 		}
