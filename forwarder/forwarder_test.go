@@ -8,15 +8,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
+	"github.com/Financial-Times/annotations-rw-neo4j/v4/ontology"
+
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/forwarder"
 
 	"github.com/Financial-Times/kafka-client-go/v3"
 )
 
 type InputMessage struct {
-	Annotations annotations.Annotations `json:"annotations"`
-	UUID        string                  `json:"uuid"`
+	Annotations ontology.Annotations `json:"annotations"`
+	UUID        string               `json:"uuid"`
 }
 
 const transactionID = "example-transaction-id"
@@ -24,8 +25,8 @@ const originSystem = "http://cmdb.ft.com/systems/pac"
 const bookmark = "FB:kcwQnrEEnFpfSJ2PtiykK/JNh8oBozhIkA=="
 
 func TestSendMessage(t *testing.T) {
-	const expectedAnnotationsOutputBody = `{"payload":{"annotations":[{"id":"http://api.ft.com/things/2cca9e2a-2248-3e48-abc1-93d718b91bbe","prefLabel":"China Politics \u0026 Policy","types":["http://www.ft.com/ontology/Topic"],"predicate":"majorMentions","relevanceScore":1,"confidenceScore":1}],"lastModified":"%s","uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://pac.annotations-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
-	const expectedSuggestionsOutputBody = `{"payload":{"lastModified":"%s","suggestions":[{"id":"http://api.ft.com/things/2cca9e2a-2248-3e48-abc1-93d718b91bbe","prefLabel":"China Politics \u0026 Policy","types":["http://www.ft.com/ontology/Topic"],"predicate":"majorMentions","relevanceScore":1,"confidenceScore":1}],"uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://v2.suggestions-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
+	const expectedAnnotationsOutputBody = `{"payload":{"annotations":[{"id":"http://api.ft.com/things/2384fa7a-d514-3d6a-a0ea-3a711f66d0d8","prefLabel":"Apple","types":["http://www.ft.com/ontology/organisation/Organisation","http://www.ft.com/ontology/core/Thing","http://www.ft.com/ontology/concept/Concept"],"predicate":"mentions","relevanceScore":1,"confidenceScore":0.9932743203464962,"annotatedBy":"http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a","annotatedDate":"2016-01-20T19:43:47.314Z","annotatedDateEpoch":1453180597}],"lastModified":"%s","uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://pac.annotations-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
+	const expectedSuggestionsOutputBody = `{"payload":{"lastModified":"%s","suggestions":[{"id":"http://api.ft.com/things/2384fa7a-d514-3d6a-a0ea-3a711f66d0d8","prefLabel":"Apple","types":["http://www.ft.com/ontology/organisation/Organisation","http://www.ft.com/ontology/core/Thing","http://www.ft.com/ontology/concept/Concept"],"predicate":"mentions","relevanceScore":1,"confidenceScore":0.9932743203464962,"annotatedBy":"http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a","annotatedDate":"2016-01-20T19:43:47.314Z","annotatedDateEpoch":1453180597}],"uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://v2.suggestions-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
 
 	body, err := ioutil.ReadFile("../exampleAnnotationsMessage.json")
 	if err != nil {

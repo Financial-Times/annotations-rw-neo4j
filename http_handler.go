@@ -22,8 +22,9 @@ const (
 	bookmarkHeader        = "Neo4j-Bookmark"
 )
 
-//service def
+// service def
 type httpHandler struct {
+	validator          jsonValidator
 	annotationsService annotations.Service
 	forwarder          forwarder.QueueForwarder
 	originMap          map[string]string
@@ -189,20 +190,20 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tid := transactionidutils.GetTransactionIDFromRequest(r)
-	bookmark, err := hh.annotationsService.Write(uuid, lifecycle, platformVersion, anns)
-	if errors.Is(err, annotations.UnsupportedPredicateErr) {
-		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("invalid predicate provided")
-		writeJSONError(w, "Please provide a valid predicate", http.StatusBadRequest)
-		return
-	}
-
-	if err != nil {
-		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("failed writing annotations")
-		msg := fmt.Sprintf("Error creating annotations (%v)", err)
-		if _, ok := err.(annotations.ValidationError); ok {
+	for _, ann := range anns {
+		err = hh.validator.Validate(ann)
+		if err != nil {
+			hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("failed validating annotations")
+			msg := fmt.Sprintf("Error validating annotations (%v)", err)
 			writeJSONError(w, msg, http.StatusBadRequest)
 			return
 		}
+	}
+
+	bookmark, err := hh.annotationsService.Write(uuid, lifecycle, platformVersion, anns)
+	if err != nil {
+		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("failed writing annotations")
+		msg := fmt.Sprintf("Error creating annotations (%v)", err)
 		hh.log.WithMonitoringEvent("SaveNeo4j", tid, hh.messageType).WithUUID(uuid).WithError(err).Error(msg)
 		writeJSONError(w, msg, http.StatusServiceUnavailable)
 		return
@@ -236,8 +237,8 @@ func jsonMessage(msgText string) []byte {
 	return []byte(fmt.Sprintf(`{"message":"%s"}`, msgText))
 }
 
-func decode(body io.Reader) (annotations.Annotations, error) {
-	var anns annotations.Annotations
+func decode(body io.Reader) ([]interface{}, error) {
+	var anns []interface{}
 	err := json.NewDecoder(body).Decode(&anns)
 	return anns, err
 }

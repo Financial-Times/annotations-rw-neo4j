@@ -1,11 +1,11 @@
-package annotations
+package ontology
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
-	conceptUUID       = "a7732a22-3884-4bfe-9761-fef161e41d69"
-	oldConceptUUID    = "ad28ddc7-4743-4ed3-9fad-5012b61fb919"
-	secondConceptUUID = "c834adfa-10c9-4748-8a21-c08537172706"
+	oldConceptUUID = "ad28ddc7-4743-4ed3-9fad-5012b61fb919"
 )
 
 func getURI(uuid string) string {

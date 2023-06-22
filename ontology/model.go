@@ -1,4 +1,4 @@
-package annotations
+package ontology
 
 // Annotations represents a collection of Annotation instances
 type Annotations []Annotation
@@ -16,7 +16,7 @@ type Annotation struct {
 	AnnotatedDateEpoch int64    `json:"annotatedDateEpoch,omitempty"`
 }
 
-var relations = map[string]string{
+var Relations = map[string]string{
 	"mentions":                "MENTIONS",
 	"isClassifiedBy":          "IS_CLASSIFIED_BY",
 	"implicitlyClassifiedBy":  "IMPLICITLY_CLASSIFIED_BY",

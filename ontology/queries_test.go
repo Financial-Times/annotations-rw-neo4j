@@ -1,7 +1,7 @@
-package annotations
+package ontology
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -20,7 +20,7 @@ func TestCreateAnnotationQuery(t *testing.T) {
 	assert := assert.New(t)
 	annotationToWrite := exampleConcept(oldConceptUUID)
 
-	query, err := createAnnotationQuery(contentUUID, annotationToWrite, v2PlatformVersion, v2AnnotationLifecycle)
+	query, err := CreateAnnotationQuery(contentUUID, convertAnnotationToMap(t, annotationToWrite), v2PlatformVersion, v2AnnotationLifecycle)
 	assert.NoError(err, "Cypher query for creating annotations couldn't be created.")
 	params := query.Params["annProps"].(map[string]interface{})
 	assert.Equal(v2PlatformVersion, params["platformVersion"], fmt.Sprintf("\nExpected: %s\nActual: %s", v2PlatformVersion, params["platformVersion"]))
@@ -88,22 +88,13 @@ func TestCreateAnnotationQueryWithPredicate(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			assert := assert.New(t)
-			query, err := createAnnotationQuery(contentUUID, test.annotationToWrite, test.platformVersion, test.lifecycle)
+			query, err := CreateAnnotationQuery(contentUUID, convertAnnotationToMap(t, test.annotationToWrite), test.platformVersion, test.lifecycle)
 
 			assert.NoError(err, "Cypher query for creating annotations couldn't be created.")
 			assert.Contains(query.Cypher, test.relationship, "Relationship name is not inserted!")
 			assert.NotContains(query.Cypher, "MENTIONS", fmt.Sprintf("%s should be inserted instead of MENTIONS", test.relationship))
 		})
 	}
-}
-
-func TestCreateAnnotationQueryWithoutPredicate(t *testing.T) {
-	assert := assert.New(t)
-	annotation := exampleConcept(oldConceptUUID)
-	annotation.Predicate = ""
-
-	_, err := createAnnotationQuery(contentUUID, annotation, v2PlatformVersion, v2AnnotationLifecycle)
-	assert.True(errors.Is(err, UnsupportedPredicateErr), "Creating annotation without predicate is not allowed.")
 }
 
 func TestGetRelationshipFromPredicate(t *testing.T) {
@@ -124,11 +115,22 @@ func TestGetRelationshipFromPredicate(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		actualRelationship, err := getRelationshipFromPredicate(test.predicate)
-		assert.NoError(t, err)
-
+		actualRelationship := getRelationshipFromPredicate(test.predicate)
 		if test.relationship != actualRelationship {
 			t.Errorf("\nExpected: %s\nActual: %s", test.relationship, actualRelationship)
 		}
 	}
+}
+
+func convertAnnotationToMap(t *testing.T, ann Annotation) map[string]interface{} {
+	var annMap map[string]interface{}
+	data, err := json.Marshal(ann)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = json.Unmarshal(data, &annMap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return annMap
 }
