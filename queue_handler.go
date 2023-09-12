@@ -15,15 +15,12 @@ import (
 )
 
 const (
-	nextVideoOrigin = "http://cmdb.ft.com/systems/next-video-editor"
-	cmsMessageType  = "cms-content-published"
+	nextVideoOrigin   = "http://cmdb.ft.com/systems/next-video-editor"
+	cmsMessageType    = "cms-content-published"
+	suggestionsMsgKey = "suggestions"
+	annotationsMsgKey = "annotations"
+	uuidMsgKey        = "uuid"
 )
-
-type queueMessage struct {
-	UUID        string
-	Annotations annotations.Annotations `json:"annotations,omitempty"`
-	Suggestions annotations.Annotations `json:"suggestions,omitempty"`
-}
 
 type kafkaConsumer interface {
 	Start(func(message kafka.FTMessage))
@@ -32,7 +29,12 @@ type kafkaConsumer interface {
 	ConnectivityCheck() error
 }
 
+type jsonValidator interface {
+	Validate(interface{}) error
+}
+
 type queueHandler struct {
+	validator          jsonValidator
 	annotationsService annotations.Service
 	consumer           kafkaConsumer
 	forwarder          forwarder.QueueForwarder
@@ -69,33 +71,44 @@ func (qh *queueHandler) Ingest() {
 			return
 		}
 
-		annMsg := new(queueMessage)
+		var annMsg map[string]interface{}
 		err = json.Unmarshal([]byte(message.Body), &annMsg)
 		if err != nil {
 			qh.log.WithTransactionID(tid).Error("Cannot process received message", tid)
 			return
 		}
 
+		contentUUID := annMsg[uuidMsgKey].(string)
 		var bookmark string
 		if qh.messageType == "Annotations" {
-			bookmark, err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, annMsg.Annotations)
+			err = qh.validate(annMsg[annotationsMsgKey])
+			if err != nil {
+				qh.log.WithError(err).Error("Validation error")
+				return
+			}
+			bookmark, err = qh.annotationsService.Write(contentUUID, lifecycle, platformVersion, annMsg[annotationsMsgKey])
 		} else {
-			bookmark, err = qh.annotationsService.Write(annMsg.UUID, lifecycle, platformVersion, annMsg.Suggestions)
+			err = qh.validate(annMsg[suggestionsMsgKey])
+			if err != nil {
+				qh.log.WithError(err).Error("Validation error")
+				return
+			}
+			bookmark, err = qh.annotationsService.Write(contentUUID, lifecycle, platformVersion, annMsg[suggestionsMsgKey])
 		}
 
 		if err != nil {
-			qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(annMsg.UUID).WithError(err).Error("Cannot write to Neo4j")
+			qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(contentUUID).WithError(err).Error("Cannot write to Neo4j")
 			return
 		}
 
-		qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(annMsg.UUID).Infof("%s successfully written in Neo4j", qh.messageType)
+		qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(contentUUID).Infof("%s successfully written in Neo4j", qh.messageType)
 
 		//forward message to the next queue
 		if qh.forwarder != nil {
-			qh.log.WithTransactionID(tid).WithUUID(annMsg.UUID).Debug("Forwarding message to the next queue")
-			err := qh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, annMsg.UUID, annMsg.Annotations)
+			qh.log.WithTransactionID(tid).WithUUID(contentUUID).Debug("Forwarding message to the next queue")
+			err := qh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, contentUUID, annMsg[annotationsMsgKey])
 			if err != nil {
-				qh.log.WithError(err).WithUUID(annMsg.UUID).WithTransactionID(tid).Error("Could not forward a message to kafka")
+				qh.log.WithError(err).WithUUID(contentUUID).WithTransactionID(tid).Error("Could not forward a message to kafka")
 				return
 			}
 			return
@@ -114,4 +127,14 @@ func (qh *queueHandler) getSourceFromHeader(originSystem string) (string, string
 		return "", "", errors.Errorf("Platform version not found for origin system id: %s and annotation lifecycle: %s", originSystem, annotationLifecycle)
 	}
 	return annotationLifecycle, platformVersion, nil
+}
+
+func (qh *queueHandler) validate(annotations interface{}) error {
+	for _, annotation := range annotations.([]interface{}) {
+		err := qh.validator.Validate(annotation)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

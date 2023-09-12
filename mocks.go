@@ -5,7 +5,6 @@ import (
 
 	"github.com/Financial-Times/kafka-client-go/v3"
 
-	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -13,7 +12,7 @@ type mockForwarder struct {
 	mock.Mock
 }
 
-func (mf *mockForwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations annotations.Annotations) error {
+func (mf *mockForwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}) error {
 	args := mf.Called(transactionID, originSystem, bookmark, platformVersion, uuid, annotations)
 	return args.Error(0)
 }

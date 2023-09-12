@@ -97,7 +97,7 @@ func (h healthCheckHandler) checkKafkaConnectivity() (string, error) {
 }
 
 // Checker does more stuff
-//TODO use the shared utility check
+// TODO use the shared utility check
 func (hc healthCheckHandler) Checker() (string, error) {
 	if err := hc.annotationsService.Check(); err != nil {
 		return "Error connecting to neo4j", err

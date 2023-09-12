@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 	"testing"
 
+	"github.com/Financial-Times/cm-annotations-ontology/validator"
 	"github.com/Financial-Times/kafka-client-go/v3"
 
 	"github.com/Financial-Times/annotations-rw-neo4j/v4/forwarder"
@@ -19,7 +21,7 @@ type QueueHandlerTestSuite struct {
 	headers            map[string]string
 	body               []byte
 	message            kafka.FTMessage
-	queueMessage       queueMessage
+	queueMessage       map[string]interface{}
 	annotationsService *mockAnnotationsService
 	forwarder          *mockForwarder
 	originMap          map[string]string
@@ -29,10 +31,13 @@ type QueueHandlerTestSuite struct {
 	bookmark           string
 	messageType        string
 	log                *logger.UPPLogger
+	validator          jsonValidator
 }
 
 func (suite *QueueHandlerTestSuite) SetupTest() {
 	var err error
+	os.Setenv("JSON_SCHEMAS_PATH", "./schemas")
+	os.Setenv("JSON_SCHEMA_NAME", "annotations-pac.json;annotations-next-video.json;annotations-v2.json")
 	suite.log = logger.NewUPPInfoLogger("annotations-rw")
 	suite.tid = "tid_sample"
 	suite.originSystem = "http://cmdb.ft.com/systems/pac"
@@ -47,6 +52,8 @@ func (suite *QueueHandlerTestSuite) SetupTest() {
 	suite.annotationsService = new(mockAnnotationsService)
 
 	suite.originMap, suite.lifecycleMap, suite.messageType, err = readConfigMap("annotation-config.json")
+	suite.validator = validator.NewSchemaValidator(suite.log).GetJSONValidator()
+
 	assert.NoError(suite.T(), err, "Unexpected config error")
 }
 
@@ -55,10 +62,11 @@ func TestQueueHandlerTestSuite(t *testing.T) {
 }
 
 func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest() {
-	suite.annotationsService.On("Write", suite.queueMessage.UUID, annotationLifecycle, platformVersion, suite.queueMessage.Annotations).Return(suite.bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage.UUID, suite.queueMessage.Annotations).Return(nil)
+	suite.annotationsService.On("Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey]).Return(suite.bookmark, nil)
+	suite.forwarder.On("SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey]).Return(nil)
 
 	qh := &queueHandler{
+		validator:          suite.validator,
 		annotationsService: suite.annotationsService,
 		consumer:           mockConsumer{message: suite.message},
 		forwarder:          suite.forwarder,
@@ -69,14 +77,15 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest() {
 	}
 	qh.Ingest()
 
-	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage.UUID, annotationLifecycle, platformVersion, suite.queueMessage.Annotations)
-	suite.forwarder.AssertCalled(suite.T(), "SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage.UUID, suite.queueMessage.Annotations)
+	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey])
+	suite.forwarder.AssertCalled(suite.T(), "SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey])
 }
 
 func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_ProducerNil() {
-	suite.annotationsService.On("Write", suite.queueMessage.UUID, annotationLifecycle, platformVersion, suite.queueMessage.Annotations).Return(suite.bookmark, nil)
+	suite.annotationsService.On("Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey]).Return(suite.bookmark, nil)
 
 	qh := queueHandler{
+		validator:          suite.validator,
 		annotationsService: suite.annotationsService,
 		consumer:           mockConsumer{message: suite.message},
 		forwarder:          nil,
@@ -87,7 +96,7 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_ProducerNil() {
 	}
 	qh.Ingest()
 
-	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage.UUID, annotationLifecycle, platformVersion, suite.queueMessage.Annotations)
+	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey])
 	suite.forwarder.AssertNumberOfCalls(suite.T(), "SendMessage", 0)
 }
 
@@ -96,6 +105,7 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_JsonError() {
 	message := kafka.NewFTMessage(suite.headers, string(body))
 
 	qh := &queueHandler{
+		validator:          suite.validator,
 		annotationsService: suite.annotationsService,
 		consumer:           mockConsumer{message: message},
 		forwarder:          suite.forwarder,
@@ -114,6 +124,7 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_InvalidOrigin() {
 	message := kafka.NewFTMessage(suite.headers, string(suite.body))
 
 	qh := &queueHandler{
+		validator:          suite.validator,
 		annotationsService: suite.annotationsService,
 		consumer:           mockConsumer{message: message},
 		forwarder:          suite.forwarder,
