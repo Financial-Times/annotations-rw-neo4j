@@ -7,7 +7,6 @@ import (
 
 	"github.com/Financial-Times/kafka-client-go/v3"
 
-	"github.com/Financial-Times/annotations-rw-neo4j/v4/annotations"
 	"github.com/google/uuid"
 )
 
@@ -26,7 +25,7 @@ type outputMessage struct {
 
 // QueueForwarder is the interface implemented by types that can send annotation messages to a queue.
 type QueueForwarder interface {
-	SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations annotations.Annotations) error
+	SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}) error
 }
 
 type kafkaProducer interface {
@@ -40,7 +39,7 @@ type Forwarder struct {
 }
 
 // SendMessage marshals an annotations payload using the outputMessage format and sends it to a Kafka.
-func (f Forwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations annotations.Annotations) error {
+func (f Forwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}) error {
 	headers := CreateHeaders(transactionID, originSystem, bookmark)
 	body, err := f.prepareBody(platformVersion, uuid, annotations, headers["Message-Timestamp"])
 	if err != nil {
@@ -50,7 +49,7 @@ func (f Forwarder) SendMessage(transactionID string, originSystem string, bookma
 	return f.Producer.SendMessage(kafka.NewFTMessage(headers, body))
 }
 
-func (f Forwarder) prepareBody(platformVersion string, uuid string, anns annotations.Annotations, lastModified string) (string, error) {
+func (f Forwarder) prepareBody(platformVersion string, uuid string, anns interface{}, lastModified string) (string, error) {
 	wrappedMsg := outputMessage{
 		Payload: map[string]interface{}{
 			strings.ToLower(f.MessageType): anns,

@@ -7,11 +7,12 @@
       "http://www.ft.com/ontology/core/Thing",
       "http://www.ft.com/ontology/concept/Concept"
     ],
-    "predicate": "isClassifiedBy",
+    "predicate": "mentions",
     "relevanceScore": 1,
     "confidenceScore": 0.9932743203464962,
     "annotatedBy": "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
-    "annotatedDate": "2016-01-20T19:43:47.314Z"
+    "annotatedDate": "2016-01-20T19:43:47.314Z",
+    "annotatedDateEpoch": 1453180597
   },
   {
     "id": "http://api.ft.com/things/ccaa202e-3d27-3b75-b2f2-261cf5038a1f",
@@ -21,9 +22,11 @@
       "http://www.ft.com/ontology/core/Thing",
       "http://www.ft.com/ontology/concept/Concept"
     ],
+    "predicate": "mentions",
     "relevanceScore": 0.375,
     "confidenceScore": 0.9996836123273414,
     "annotatedBy": "http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a",
-    "annotatedDate": "2016-01-20T19:43:47.314Z"
+    "annotatedDate": "2016-01-20T19:43:47.314Z",
+    "annotatedDateEpoch": 1453180597
   }
 ]

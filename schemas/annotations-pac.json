@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://cm-delivery-prod.ft.com/schema/annotations-pac+json",
+  "title": "PAC Annotations",
+  "type": "object",
+  "description": "Schema for PAC Annotations",
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": ".*/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$",
+      "description": "ID of the related concept"
+    },
+    "predicate": {
+      "type": "string",
+      "description": "Predicate of the annotation",
+      "enum": [
+        "http://www.ft.com/ontology/annotation/mentions",
+        "http://www.ft.com/ontology/classification/isClassifiedBy",
+        "http://www.ft.com/ontology/implicitlyClassifiedBy",
+        "http://www.ft.com/ontology/annotation/about",
+        "http://www.ft.com/ontology/isPrimarilyClassifiedBy",
+        "http://www.ft.com/ontology/majorMentions",
+        "http://www.ft.com/ontology/annotation/hasAuthor",
+        "http://www.ft.com/ontology/hasContributor",
+        "http://www.ft.com/ontology/hasDisplayTag",
+        "http://www.ft.com/ontology/hasBrand"
+      ]
+    }
+  },
+  "required": [
+    "id",
+    "predicate"
+  ],
+  "additionalProperties": false
+}
