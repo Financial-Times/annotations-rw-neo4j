@@ -1,9 +1,9 @@
 module github.com/Financial-Times/annotations-rw-neo4j/v4
 
-go 1.19
+go 1.21
 
 require (
-	github.com/Financial-Times/cm-annotations-ontology v1.0.0-init
+	github.com/Financial-Times/cm-annotations-ontology v1.0.0
 	github.com/Financial-Times/cm-neo4j-driver v1.1.0
 	github.com/Financial-Times/go-fthealth v0.0.0-20200609161010-4c53fbef65fa
 	github.com/Financial-Times/go-logger/v2 v2.0.1
