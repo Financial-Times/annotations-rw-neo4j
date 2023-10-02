@@ -25,6 +25,22 @@
         "http://www.ft.com/ontology/hasDisplayTag",
         "http://www.ft.com/ontology/hasBrand"
       ]
+    },
+    "apiUrl": {
+      "type": "string",
+      "description": "API URL of the related concept"
+    },
+    "type": {
+      "type": "string",
+      "description": "Type of the related concept"
+    },
+    "prefLabel": {
+      "type": "string",
+      "description": "PrefLabel of the related concept"
+    },
+    "isFTAuthor": {
+      "type": "boolean",
+      "description": "Indicates whether the related concept is an FT author"
     }
   },
   "required": [
