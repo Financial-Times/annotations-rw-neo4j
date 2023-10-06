@@ -1,6 +1,6 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/Financial-Times/cm-annotations-ontology v1.0.0 h1:4qxTPibpcyZLCH5jvWtfMSsj4cFZp1axpR4hzYbCxX8=
-github.com/Financial-Times/cm-annotations-ontology v1.0.0/go.mod h1:/XnpxdtpDn+CgbTCecv81k6ebSgt+jNx5KrrO2zsP+8=
+github.com/Financial-Times/cm-annotations-ontology v1.0.1 h1:EAK3/m4wdnnBmmW/AR1LWXmLFBWj3evtuUaB7UsL0gg=
+github.com/Financial-Times/cm-annotations-ontology v1.0.1/go.mod h1:/XnpxdtpDn+CgbTCecv81k6ebSgt+jNx5KrrO2zsP+8=
 github.com/Financial-Times/cm-neo4j-driver v1.1.0 h1:9TZgyE7Vl8iuH0MRQlrVLkjzLFwIQsCn/td806WU7A8=
 github.com/Financial-Times/cm-neo4j-driver v1.1.0/go.mod h1:fQ77C8A+6I+ihwe6Ob8Y7sIzU3s/DTrjBZJGVQOeum0=
 github.com/Financial-Times/go-fthealth v0.0.0-20200609161010-4c53fbef65fa h1:jhrRhI2ihDmhAhmCucnabU6gyuQIDBcId7kKjnyp7Ec=
