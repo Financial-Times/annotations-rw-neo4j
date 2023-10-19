@@ -1,11 +1,13 @@
 {
   "originMap": {
     "http://cmdb.ft.com/systems/next-video-editor": "annotations-next-video",
-    "http://cmdb.ft.com/systems/pac": "annotations-pac"
+    "http://cmdb.ft.com/systems/pac": "annotations-pac",
+    "http://cmdb.ft.com/systems/cct": "external"
   },
   "lifecycleMap": {
     "annotations-next-video": "next-video",
-    "annotations-pac": "pac"
+    "annotations-pac": "pac",
+    "external": "external"
   },
   "messageType": "Annotations"
 }

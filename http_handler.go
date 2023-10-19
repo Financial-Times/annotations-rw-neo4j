@@ -20,6 +20,7 @@ import (
 const (
 	lifecyclePropertyName = "annotationLifecycle"
 	bookmarkHeader        = "Neo4j-Bookmark"
+	publicationHeader     = "Publication"
 )
 
 // service def
@@ -200,7 +201,12 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	bookmark, err := hh.annotationsService.Write(uuid, lifecycle, platformVersion, anns)
+	var publication []string
+	pubStr := r.Header.Get(publicationHeader)
+	if pubStr != "" {
+		publication = strings.Split(r.Header.Get(publicationHeader), ",")
+	}
+	bookmark, err := hh.annotationsService.Write(uuid, lifecycle, platformVersion, toSliceOfInterface(publication), anns)
 	if err != nil {
 		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("failed writing annotations")
 		msg := fmt.Sprintf("Error creating annotations (%v)", err)
@@ -249,4 +255,12 @@ func isContentTypeJSON(r *http.Request) error {
 		return errors.New("Http Header 'Content-Type' is not 'application/json', this is a JSON API")
 	}
 	return nil
+}
+
+func toSliceOfInterface(s []string) []interface{} {
+	result := make([]interface{}, len(s))
+	for i, v := range s {
+		result[i] = v
+	}
+	return result
 }

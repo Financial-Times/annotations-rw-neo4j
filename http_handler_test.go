@@ -45,7 +45,7 @@ type HttpHandlerTestSuite struct {
 
 func (suite *HttpHandlerTestSuite) SetupTest() {
 	os.Setenv("JSON_SCHEMAS_PATH", "./schemas")
-	os.Setenv("JSON_SCHEMA_NAME", "annotations-pac.json;annotations-next-video.json;annotations-v2.json")
+	os.Setenv("JSON_SCHEMA_NAME", "annotations-pac.json;annotations-next-video.json;annotations-v2.json;annotations-sv.json")
 
 	suite.log = logger.NewUPPInfoLogger("annotations-rw")
 	var err error
@@ -71,7 +71,7 @@ func TestHttpHandlerTestSuite(t *testing.T) {
 }
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_Success() {
-	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.annotations).Return(bookmark, nil)
+	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
 	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(nil).Once()
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
@@ -110,7 +110,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_NotJson() {
 }
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_WriteFailed() {
-	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.annotations).Return("", errors.New("Write failed"))
+	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return("", errors.New("Write failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.validator, suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -120,7 +120,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_WriteFailed() {
 }
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_ForwardingFailed() {
-	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, suite.annotations).Return(bookmark, nil)
+	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
 	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(errors.New("forwarding failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)

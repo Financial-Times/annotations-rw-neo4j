@@ -21,8 +21,8 @@ type mockAnnotationsService struct {
 	mock.Mock
 }
 
-func (as *mockAnnotationsService) Write(contentUUID string, annotationLifecycle string, platformVersion string, thing interface{}) (bookmark string, err error) {
-	args := as.Called(contentUUID, annotationLifecycle, platformVersion, thing)
+func (as *mockAnnotationsService) Write(contentUUID string, annotationLifecycle string, platformVersion string, publication []interface{}, thing interface{}) (bookmark string, err error) {
+	args := as.Called(contentUUID, annotationLifecycle, platformVersion, publication, thing)
 	return args.String(0), args.Error(1)
 }
 func (as *mockAnnotationsService) Read(contentUUID string, bookmark string, annotationLifecycle string) (thing interface{}, found bool, err error) {

@@ -62,7 +62,7 @@ func TestQueueHandlerTestSuite(t *testing.T) {
 }
 
 func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest() {
-	suite.annotationsService.On("Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey]).Return(suite.bookmark, nil)
+	suite.annotationsService.On("Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, []interface{}{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, suite.queueMessage[annotationsMsgKey]).Return(suite.bookmark, nil)
 	suite.forwarder.On("SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey]).Return(nil)
 
 	qh := &queueHandler{
@@ -77,12 +77,12 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest() {
 	}
 	qh.Ingest()
 
-	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey])
+	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, []interface{}{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, suite.queueMessage[annotationsMsgKey])
 	suite.forwarder.AssertCalled(suite.T(), "SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey])
 }
 
 func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_ProducerNil() {
-	suite.annotationsService.On("Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey]).Return(suite.bookmark, nil)
+	suite.annotationsService.On("Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, []interface{}{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, suite.queueMessage[annotationsMsgKey]).Return(suite.bookmark, nil)
 
 	qh := queueHandler{
 		validator:          suite.validator,
@@ -96,7 +96,7 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_ProducerNil() {
 	}
 	qh.Ingest()
 
-	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, suite.queueMessage[annotationsMsgKey])
+	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, []interface{}{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, suite.queueMessage[annotationsMsgKey])
 	suite.forwarder.AssertNumberOfCalls(suite.T(), "SendMessage", 0)
 }
 
