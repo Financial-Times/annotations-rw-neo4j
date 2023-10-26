@@ -28,10 +28,6 @@
     "prefLabel": {
       "type": "string",
       "description": "PrefLabel of the related concept"
-    },
-    "isFTAuthor": {
-      "type": "boolean",
-      "description": "Indicates whether the related concept is an FT author"
     }
   },
   "required": [

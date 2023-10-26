@@ -83,7 +83,11 @@ func (qh *queueHandler) Ingest() {
 		var publication []interface{}
 		pubSlice, ok := annMsg[publicationMsgKey]
 		if ok {
-			publication = pubSlice.([]interface{})
+			publication, ok = pubSlice.([]interface{})
+			if !ok {
+				qh.log.Error("Publication field format is not supported")
+				return
+			}
 		}
 
 		var bookmark string
