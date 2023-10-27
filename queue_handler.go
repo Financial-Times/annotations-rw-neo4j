@@ -20,6 +20,7 @@ const (
 	suggestionsMsgKey = "suggestions"
 	annotationsMsgKey = "annotations"
 	uuidMsgKey        = "uuid"
+	publicationMsgKey = "publication"
 )
 
 type kafkaConsumer interface {
@@ -79,6 +80,16 @@ func (qh *queueHandler) Ingest() {
 		}
 
 		contentUUID := annMsg[uuidMsgKey].(string)
+		var publication []interface{}
+		pubSlice, ok := annMsg[publicationMsgKey]
+		if ok {
+			publication, ok = pubSlice.([]interface{})
+			if !ok {
+				qh.log.Error("Publication field format is not supported")
+				return
+			}
+		}
+
 		var bookmark string
 		if qh.messageType == "Annotations" {
 			err = qh.validate(annMsg[annotationsMsgKey])
@@ -86,14 +97,14 @@ func (qh *queueHandler) Ingest() {
 				qh.log.WithError(err).Error("Validation error")
 				return
 			}
-			bookmark, err = qh.annotationsService.Write(contentUUID, lifecycle, platformVersion, annMsg[annotationsMsgKey])
+			bookmark, err = qh.annotationsService.Write(contentUUID, lifecycle, platformVersion, publication, annMsg[annotationsMsgKey])
 		} else {
 			err = qh.validate(annMsg[suggestionsMsgKey])
 			if err != nil {
 				qh.log.WithError(err).Error("Validation error")
 				return
 			}
-			bookmark, err = qh.annotationsService.Write(contentUUID, lifecycle, platformVersion, annMsg[suggestionsMsgKey])
+			bookmark, err = qh.annotationsService.Write(contentUUID, lifecycle, platformVersion, publication, annMsg[suggestionsMsgKey])
 		}
 
 		if err != nil {

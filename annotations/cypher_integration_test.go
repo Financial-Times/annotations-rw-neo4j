@@ -82,7 +82,7 @@ func TestWriteFailsWhenNoConceptIDSupplied(t *testing.T) {
 		AnnotatedDate:   "2016-01-01T19:43:47.314Z",
 	}}
 
-	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, conceptWithoutID))
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, nil, convertAnnotations(t, conceptWithoutID))
 	assert.Error(err, "Should have failed to write annotation")
 }
 
@@ -93,9 +93,9 @@ func TestDeleteRemovesAnnotationsButNotConceptsOrContent(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 	annotationsToDelete := exampleConcepts(conceptUUID)
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToDelete))
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, nil, convertAnnotations(t, annotationsToDelete))
 	assert.NoError(err, "Failed to write annotation")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToDelete)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, nil, annotationsToDelete)
 
 	deleted, bookmark, err := annotationsService.Delete(contentUUID, v2AnnotationLifecycle)
 	assert.True(deleted, "Didn't manage to delete annotations for content uuid %s: %s", contentUUID, err)
@@ -123,10 +123,10 @@ func TestWriteAllValuesPresent(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToWrite))
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, []interface{}{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, convertAnnotations(t, annotationsToWrite))
 	assert.NoError(err, "Failed to write annotation")
 
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, annotationsToWrite)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, []string{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, annotationsToWrite)
 
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID})
 }
@@ -154,7 +154,7 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithoutLifecy
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
-	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToWrite))
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, nil, convertAnnotations(t, annotationsToWrite))
 	assert.NoError(err, "Failed to write annotation")
 	checkRelationship(t, assert, contentUUID, "v2")
 
@@ -204,7 +204,7 @@ func TestWriteDoesNotRemoveExistingIsClassifiedByBrandRelationshipsWithContentLi
 
 	annotationsToWrite := exampleConcepts(conceptUUID)
 
-	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, annotationsToWrite))
+	_, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, nil, convertAnnotations(t, annotationsToWrite))
 	assert.NoError(err, "Failed to write annotation")
 	checkRelationship(t, assert, contentUUID, "v2")
 
@@ -262,7 +262,7 @@ func TestWriteDoesRemoveExistingIsClassifiedForPACTermsAndTheirRelationships(t *
 
 	assert.NoError(driver.Write(contentQuery))
 
-	_, err = annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, convertAnnotations(t, exampleConcepts(conceptUUID)))
+	_, err = annotationsService.Write(contentUUID, PACAnnotationLifecycle, PACPlatformVersion, nil, convertAnnotations(t, exampleConcepts(conceptUUID)))
 	assert.NoError(err, "Failed to write annotation")
 	found, bookmark, err := annotationsService.Delete(contentUUID, PACAnnotationLifecycle)
 	assert.True(found, "Didn't manage to delete annotations for content uuid %s", contentUUID)
@@ -352,10 +352,10 @@ func TestWriteAndReadMultipleAnnotations(t *testing.T) {
 		},
 	}
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, multiConceptAnnotations))
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, nil, convertAnnotations(t, multiConceptAnnotations))
 	assert.NoError(err, "Failed to write annotation")
 
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, multiConceptAnnotations)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, nil, multiConceptAnnotations)
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID, secondConceptUUID})
 }
 
@@ -381,7 +381,7 @@ func TestNextVideoAnnotationsUpdatesAnnotations(t *testing.T) {
 	err = driver.Write(contentQuery)
 	assert.NoError(err, "Error creating test data in database.")
 
-	_, err = annotationsService.Write(contentUUID, nextVideoAnnotationsLifecycle, nextVideoPlatformVersion, convertAnnotations(t, exampleConcepts(secondConceptUUID)))
+	_, err = annotationsService.Write(contentUUID, nextVideoAnnotationsLifecycle, nextVideoPlatformVersion, nil, convertAnnotations(t, exampleConcepts(secondConceptUUID)))
 	assert.NoError(err, "Failed to write annotation.")
 
 	result := []struct {
@@ -416,15 +416,15 @@ func TestUpdateWillRemovePreviousAnnotations(t *testing.T) {
 	assert.NoError(err, "creating cypher annotations service failed")
 	oldAnnotationsToWrite := exampleConcepts(oldConceptUUID)
 
-	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, oldAnnotationsToWrite))
+	bookmark, err := annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, nil, convertAnnotations(t, oldAnnotationsToWrite))
 	assert.NoError(err, "Failed to write annotations")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, oldAnnotationsToWrite)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, nil, oldAnnotationsToWrite)
 
 	updatedAnnotationsToWrite := exampleConcepts(conceptUUID)
 
-	bookmark, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, convertAnnotations(t, updatedAnnotationsToWrite))
+	bookmark, err = annotationsService.Write(contentUUID, v2AnnotationLifecycle, v2PlatformVersion, nil, convertAnnotations(t, updatedAnnotationsToWrite))
 	assert.NoError(err, "Failed to write updated annotations")
-	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, updatedAnnotationsToWrite)
+	readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t, annotationsService, contentUUID, v2AnnotationLifecycle, bookmark, nil, updatedAnnotationsToWrite)
 
 	cleanUp(t, contentUUID, v2AnnotationLifecycle, []string{conceptUUID, oldConceptUUID})
 }
@@ -446,7 +446,7 @@ func getNeo4jDriver(t *testing.T) *cmneo4j.Driver {
 }
 
 // nolint:all
-func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, svc Service, contentUUID, annotationLifecycle, bookmark string, expectedAnnotations []model.Annotation) {
+func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, svc Service, contentUUID, annotationLifecycle, bookmark string, publication []string, expectedAnnotations []model.Annotation) {
 	assert := assert.New(t)
 	storedThings, found, err := svc.Read(contentUUID, bookmark, annotationLifecycle)
 	storedAnnotations := storedThings.(*[]model.Annotation)
@@ -466,6 +466,7 @@ func readAnnotationsForContentUUIDAndCheckKeyFieldsMatch(t *testing.T, svc Servi
 		assert.Equal(expectedAnnotation.ConfidenceScore, storedAnnotation.ConfidenceScore, "Confidence score is not the same")
 		assert.Equal(expectedAnnotation.AnnotatedBy, storedAnnotation.AnnotatedBy, "AnnotatedBy is not the same")
 		assert.Equal(expectedAnnotation.AnnotatedDate, storedAnnotation.AnnotatedDate, "AnnotatedDate is not the same")
+		assert.Equal(publication, storedAnnotation.Publication, "Publication is not the same")
 	}
 }
 

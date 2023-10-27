@@ -20,7 +20,7 @@ import (
 // The problem is that we have a list of things, and the uuid is for a related OTHER thing
 // TODO - move to implement a shared defined Service interface?
 type Service interface {
-	Write(contentUUID string, annotationLifecycle string, platformVersion string, anns interface{}) (bookmark string, err error)
+	Write(contentUUID string, annotationLifecycle string, platformVersion string, publication []interface{}, anns interface{}) (bookmark string, err error)
 	Read(contentUUID string, bookmark string, annotationLifecycle string) (thing interface{}, found bool, err error)
 	Delete(contentUUID string, annotationLifecycle string) (found bool, bookmark string, err error)
 	Check() (err error)
@@ -91,7 +91,7 @@ func (s service) Delete(contentUUID string, annotationLifecycle string) (bool, s
 
 // Write a set of annotations associated with a piece of content. Any annotations
 // already there will be removed
-func (s service) Write(contentUUID string, annotationLifecycle string, platformVersion string, anns interface{}) (string, error) {
+func (s service) Write(contentUUID string, annotationLifecycle string, platformVersion string, publication []interface{}, anns interface{}) (string, error) {
 	if contentUUID == "" {
 		return "", errors.New("content uuid is required")
 	}
@@ -109,7 +109,7 @@ func (s service) Write(contentUUID string, annotationLifecycle string, platformV
 			return "", errors.New("error in casting annotation")
 		}
 
-		query, err := neo4j.CreateAnnotationQuery(contentUUID, annotation, platformVersion, annotationLifecycle)
+		query, err := neo4j.CreateAnnotationQuery(contentUUID, annotation, platformVersion, annotationLifecycle, publication)
 		if err != nil {
 			return "", fmt.Errorf("create annotation query failed: %w", err)
 		}
