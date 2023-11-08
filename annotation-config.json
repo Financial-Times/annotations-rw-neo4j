@@ -2,7 +2,8 @@
   "originMap": {
     "http://cmdb.ft.com/systems/next-video-editor": "annotations-next-video",
     "http://cmdb.ft.com/systems/pac": "annotations-pac",
-    "http://cmdb.ft.com/systems/cct": "external"
+    "http://cmdb.ft.com/systems/cct": "external",
+    "http://cmdb.ft.com/systems/spark": "external"
   },
   "lifecycleMap": {
     "annotations-next-video": "next-video",
