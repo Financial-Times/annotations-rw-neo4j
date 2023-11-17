@@ -2,13 +2,13 @@
   "originMap": {
     "http://cmdb.ft.com/systems/next-video-editor": "annotations-next-video",
     "http://cmdb.ft.com/systems/pac": "annotations-pac",
-    "http://cmdb.ft.com/systems/cct": "external",
-    "http://cmdb.ft.com/systems/spark": "external"
+    "http://cmdb.ft.com/systems/cct": "annotations-manual",
+    "http://cmdb.ft.com/systems/spark": "annotations-manual"
   },
   "lifecycleMap": {
     "annotations-next-video": "next-video",
     "annotations-pac": "pac",
-    "external": "external"
+    "annotations-manual": "manual"
   },
   "messageType": "Annotations"
 }
