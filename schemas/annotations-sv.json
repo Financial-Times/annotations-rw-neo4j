@@ -14,7 +14,8 @@
       "type": "string",
       "description": "Predicate of the annotation",
       "enum": [
-        "http://www.ft.com/ontology/annotation/about"
+        "http://www.ft.com/ontology/annotation/about",
+        "http://www.ft.com/ontology/annotation/hasAuthor"
       ]
     },
     "apiUrl": {
