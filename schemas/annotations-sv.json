@@ -15,7 +15,8 @@
       "description": "Predicate of the annotation",
       "enum": [
         "http://www.ft.com/ontology/annotation/about",
-        "http://www.ft.com/ontology/annotation/hasAuthor"
+        "http://www.ft.com/ontology/annotation/hasAuthor",
+        "http://www.ft.com/ontology/annotation/hasReference"
       ]
     },
     "apiUrl": {
