@@ -32,6 +32,7 @@ type QueueHandlerTestSuite struct {
 	messageType        string
 	log                *logger.UPPLogger
 	validator          jsonValidator
+	publication        []string
 }
 
 func (suite *QueueHandlerTestSuite) SetupTest() {
@@ -53,6 +54,7 @@ func (suite *QueueHandlerTestSuite) SetupTest() {
 
 	suite.originMap, suite.lifecycleMap, suite.messageType, err = readConfigMap("annotation-config.json")
 	suite.validator = validator.NewSchemaValidator(suite.log).GetJSONValidator()
+	suite.publication = []string{"8e6c705e-1132-42a2-8db0-c295e29e8658"}
 
 	assert.NoError(suite.T(), err, "Unexpected config error")
 }
@@ -63,7 +65,7 @@ func TestQueueHandlerTestSuite(t *testing.T) {
 
 func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest() {
 	suite.annotationsService.On("Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, []interface{}{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, suite.queueMessage[annotationsMsgKey]).Return(suite.bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey]).Return(nil)
+	suite.forwarder.On("SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey], suite.publication).Return(nil)
 
 	qh := &queueHandler{
 		validator:          suite.validator,
@@ -78,7 +80,7 @@ func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest() {
 	qh.Ingest()
 
 	suite.annotationsService.AssertCalled(suite.T(), "Write", suite.queueMessage[uuidMsgKey], annotationLifecycle, platformVersion, []interface{}{"8e6c705e-1132-42a2-8db0-c295e29e8658"}, suite.queueMessage[annotationsMsgKey])
-	suite.forwarder.AssertCalled(suite.T(), "SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey])
+	suite.forwarder.AssertCalled(suite.T(), "SendMessage", suite.tid, suite.originSystem, suite.bookmark, platformVersion, suite.queueMessage[uuidMsgKey], suite.queueMessage[annotationsMsgKey], suite.publication)
 }
 
 func (suite *QueueHandlerTestSuite) TestQueueHandler_Ingest_ProducerNil() {

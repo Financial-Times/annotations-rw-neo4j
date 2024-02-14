@@ -108,7 +108,7 @@ func (hh *httpHandler) DeleteAnnotations(w http.ResponseWriter, r *http.Request)
 	}
 	w.Header().Add(bookmarkHeader, bookmark)
 	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte(jsonMessage(fmt.Sprintf("Annotations for content %s deleted", uuid))))
+	w.Write(jsonMessage(fmt.Sprintf("Annotations for content %s deleted", uuid)))
 }
 
 func (hh *httpHandler) CountAnnotations(w http.ResponseWriter, r *http.Request) {
@@ -218,19 +218,19 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 
 	if hh.forwarder != nil {
 		hh.log.WithTransactionID(tid).WithUUID(uuid).Debug("Forwarding message to the next queue")
-		err = hh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, uuid, anns)
+		err = hh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, uuid, anns, publication)
 		if err != nil {
 			msg := "Failed to forward message to queue"
 			hh.log.WithTransactionID(tid).WithUUID(uuid).WithError(err).Error(msg)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(jsonMessage(msg)))
+			w.Write(jsonMessage(msg))
 			return
 		}
 	}
 
 	w.Header().Add(bookmarkHeader, bookmark)
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(jsonMessage(fmt.Sprintf("Annotations for content %s created", uuid))))
+	w.Write(jsonMessage(fmt.Sprintf("Annotations for content %s created", uuid)))
 	return
 }
 

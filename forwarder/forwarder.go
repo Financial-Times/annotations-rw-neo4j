@@ -25,7 +25,7 @@ type outputMessage struct {
 
 // QueueForwarder is the interface implemented by types that can send annotation messages to a queue.
 type QueueForwarder interface {
-	SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}) error
+	SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}, publication []string) error
 }
 
 type kafkaProducer interface {
@@ -39,9 +39,9 @@ type Forwarder struct {
 }
 
 // SendMessage marshals an annotations payload using the outputMessage format and sends it to a Kafka.
-func (f Forwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}) error {
+func (f Forwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}, publication []string) error {
 	headers := CreateHeaders(transactionID, originSystem, bookmark)
-	body, err := f.prepareBody(platformVersion, uuid, annotations, headers["Message-Timestamp"])
+	body, err := f.prepareBody(platformVersion, uuid, annotations, headers["Message-Timestamp"], publication)
 	if err != nil {
 		return err
 	}
@@ -49,12 +49,13 @@ func (f Forwarder) SendMessage(transactionID string, originSystem string, bookma
 	return f.Producer.SendMessage(kafka.NewFTMessage(headers, body))
 }
 
-func (f Forwarder) prepareBody(platformVersion string, uuid string, anns interface{}, lastModified string) (string, error) {
+func (f Forwarder) prepareBody(platformVersion string, uuid string, anns interface{}, lastModified string, publication []string) (string, error) {
 	wrappedMsg := outputMessage{
 		Payload: map[string]interface{}{
 			strings.ToLower(f.MessageType): anns,
 			"lastModified":                 lastModified,
 			"uuid":                         uuid,
+			"publication":                  publication,
 		},
 		ContentURI:   "http://" + platformVersion + "." + strings.ToLower(f.MessageType) + "-rw-neo4j.svc.ft.com/annotations/" + uuid,
 		LastModified: lastModified,

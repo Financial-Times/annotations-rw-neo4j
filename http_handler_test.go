@@ -41,6 +41,7 @@ type HttpHandlerTestSuite struct {
 	messageType        string
 	log                *logger.UPPLogger
 	validator          jsonValidator
+	publication        []string
 }
 
 func (suite *HttpHandlerTestSuite) SetupTest() {
@@ -62,7 +63,7 @@ func (suite *HttpHandlerTestSuite) SetupTest() {
 	suite.healthCheckHandler = healthCheckHandler{}
 	suite.originMap, suite.lifecycleMap, suite.messageType, err = readConfigMap("annotation-config.json")
 	suite.validator = validator.NewSchemaValidator(suite.log).GetJSONValidator()
-
+	suite.publication = []string{"8e6c705e-1132-42a2-8db0-c295e29e8658"}
 	assert.NoError(suite.T(), err, "Unexpected error")
 }
 
@@ -72,7 +73,7 @@ func TestHttpHandlerTestSuite(t *testing.T) {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_Success() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(nil).Once()
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(nil).Once()
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.validator, suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -121,7 +122,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_WriteFailed() {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_ForwardingFailed() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(errors.New("forwarding failed"))
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(errors.New("forwarding failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.validator, suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
