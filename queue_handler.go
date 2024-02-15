@@ -159,9 +159,9 @@ func (qh *queueHandler) validate(annotations interface{}) error {
 func convertPublicationToStringSlice(publication []interface{}) ([]string, error) {
 	var res []string
 
-	for i, v := range publication {
+	for _, v := range publication {
 		if str, ok := v.(string); ok {
-			res[i] = str
+			res = append(res, str)
 		}
 	}
 
