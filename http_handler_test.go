@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"github.com/Financial-Times/cm-annotations-ontology/validator"
 
 	logger "github.com/Financial-Times/go-logger/v2"
-	"github.com/Financial-Times/kafka-client-go/v3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -33,7 +31,6 @@ type HttpHandlerTestSuite struct {
 	annotations        []interface{}
 	annotationsService *mockAnnotationsService
 	forwarder          *mockForwarder
-	message            kafka.FTMessage
 	healthCheckHandler healthCheckHandler
 	originMap          map[string]string
 	lifecycleMap       map[string]string
@@ -50,7 +47,7 @@ func (suite *HttpHandlerTestSuite) SetupTest() {
 
 	suite.log = logger.NewUPPInfoLogger("annotations-rw")
 	var err error
-	suite.body, err = ioutil.ReadFile("examplePutBody.json")
+	suite.body, err = os.ReadFile("examplePutBody.json")
 	assert.NoError(suite.T(), err, "Unexpected error")
 
 	suite.annotations, err = decode(bytes.NewReader(suite.body))

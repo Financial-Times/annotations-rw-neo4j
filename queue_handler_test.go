@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -45,7 +44,7 @@ func (suite *QueueHandlerTestSuite) SetupTest() {
 	suite.bookmark = "FB:kcwQnrEEnFpfSJ2PtiykK/JNh8oBozhIkA=="
 	suite.forwarder = new(mockForwarder)
 	suite.headers = forwarder.CreateHeaders(suite.tid, suite.originSystem, suite.bookmark)
-	suite.body, err = ioutil.ReadFile("exampleAnnotationsMessage.json")
+	suite.body, err = os.ReadFile("exampleAnnotationsMessage.json")
 	assert.NoError(suite.T(), err, "Unexpected error")
 	suite.message = kafka.NewFTMessage(suite.headers, string(suite.body))
 	err = json.Unmarshal(suite.body, &suite.queueMessage)
