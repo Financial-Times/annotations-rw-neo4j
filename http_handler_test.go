@@ -60,7 +60,7 @@ func (suite *HttpHandlerTestSuite) SetupTest() {
 	suite.healthCheckHandler = healthCheckHandler{}
 	suite.originMap, suite.lifecycleMap, suite.messageType, err = readConfigMap("annotation-config.json")
 	suite.validator = validator.NewSchemaValidator(suite.log).GetJSONValidator()
-	suite.publication = []string{"8e6c705e-1132-42a2-8db0-c295e29e8658"}
+
 	assert.NoError(suite.T(), err, "Unexpected error")
 }
 
