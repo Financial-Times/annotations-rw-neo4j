@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -250,7 +249,7 @@ func setupMessageConsumer(kafkaAddress string, consumerGroup string, topics []st
 
 func readConfigMap(jsonPath string) (originMap map[string]string, lifecycleMap map[string]string, messageType string, err error) {
 
-	file, err := ioutil.ReadFile(jsonPath)
+	file, err := os.ReadFile(jsonPath)
 	if err != nil {
 		return nil, nil, "", fmt.Errorf("error reading configuration file: %w", err)
 	}

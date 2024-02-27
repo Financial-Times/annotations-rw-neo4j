@@ -72,7 +72,10 @@ func (hh *httpHandler) GetAnnotations(w http.ResponseWriter, r *http.Request) {
 	hh.log.Debugf("Annotations for content (uuid:%s): %s\n", uuid, annotationJson)
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(annotations)
+	err = json.NewEncoder(w).Encode(annotations)
+	if err != nil {
+		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("writing response")
+	}
 }
 
 // DeleteAnnotations will delete all the annotations for a piece of content
@@ -108,7 +111,10 @@ func (hh *httpHandler) DeleteAnnotations(w http.ResponseWriter, r *http.Request)
 	}
 	w.Header().Add(bookmarkHeader, bookmark)
 	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte(jsonMessage(fmt.Sprintf("Annotations for content %s deleted", uuid))))
+	_, err = w.Write(jsonMessage(fmt.Sprintf("Annotations for content %s deleted", uuid)))
+	if err != nil {
+		hh.log.WithUUID(uuid).WithTransactionID(tid).WithError(err).Error("writing response")
+	}
 }
 
 func (hh *httpHandler) CountAnnotations(w http.ResponseWriter, r *http.Request) {
@@ -218,25 +224,30 @@ func (hh *httpHandler) PutAnnotations(w http.ResponseWriter, r *http.Request) {
 
 	if hh.forwarder != nil {
 		hh.log.WithTransactionID(tid).WithUUID(uuid).Debug("Forwarding message to the next queue")
-		err = hh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, uuid, anns)
+		err = hh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, uuid, anns, publication)
 		if err != nil {
 			msg := "Failed to forward message to queue"
 			hh.log.WithTransactionID(tid).WithUUID(uuid).WithError(err).Error(msg)
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(jsonMessage(msg)))
+			_, err = w.Write(jsonMessage(msg))
+			if err != nil {
+				hh.log.WithTransactionID(tid).WithUUID(uuid).WithError(err).Error("writing response")
+			}
 			return
 		}
 	}
 
 	w.Header().Add(bookmarkHeader, bookmark)
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(jsonMessage(fmt.Sprintf("Annotations for content %s created", uuid))))
-	return
+	_, err = w.Write(jsonMessage(fmt.Sprintf("Annotations for content %s created", uuid)))
+	if err != nil {
+		hh.log.WithTransactionID(tid).WithUUID(uuid).WithError(err).Error("writing response")
+	}
 }
 
 func writeJSONError(w http.ResponseWriter, errorMsg string, statusCode int) {
 	w.WriteHeader(statusCode)
-	fmt.Fprintln(w, fmt.Sprintf("{\"message\": \"%s\"}", errorMsg))
+	fmt.Println(w, fmt.Sprintf("{\"message\": \"%s\"}", errorMsg))
 }
 
 func jsonMessage(msgText string) []byte {

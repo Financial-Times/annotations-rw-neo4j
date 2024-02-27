@@ -12,8 +12,8 @@ type mockForwarder struct {
 	mock.Mock
 }
 
-func (mf *mockForwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}) error {
-	args := mf.Called(transactionID, originSystem, bookmark, platformVersion, uuid, annotations)
+func (mf *mockForwarder) SendMessage(transactionID string, originSystem string, bookmark string, platformVersion string, uuid string, annotations interface{}, publication []string) error {
+	args := mf.Called(transactionID, originSystem, bookmark, platformVersion, uuid, annotations, publication)
 	return args.Error(0)
 }
 

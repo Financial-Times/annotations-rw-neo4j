@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/Financial-Times/kafka-client-go/v3"
 
@@ -114,10 +115,15 @@ func (qh *queueHandler) Ingest() {
 
 		qh.log.WithMonitoringEvent("SaveNeo4j", tid, qh.messageType).WithUUID(contentUUID).Infof("%s successfully written in Neo4j", qh.messageType)
 
+		stringPublication, err := convertPublicationToStringSlice(publication)
+		if err != nil {
+			qh.log.WithError(err).WithTransactionID(tid).Warn("converting publication slice error, sending empty publication")
+		}
+
 		//forward message to the next queue
 		if qh.forwarder != nil {
 			qh.log.WithTransactionID(tid).WithUUID(contentUUID).Debug("Forwarding message to the next queue")
-			err := qh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, contentUUID, annMsg[annotationsMsgKey])
+			err := qh.forwarder.SendMessage(tid, originSystem, bookmark, platformVersion, contentUUID, annMsg[annotationsMsgKey], stringPublication)
 			if err != nil {
 				qh.log.WithError(err).WithUUID(contentUUID).WithTransactionID(tid).Error("Could not forward a message to kafka")
 				return
@@ -148,4 +154,20 @@ func (qh *queueHandler) validate(annotations interface{}) error {
 		}
 	}
 	return nil
+}
+
+func convertPublicationToStringSlice(publication []interface{}) ([]string, error) {
+	var res []string
+
+	for _, v := range publication {
+		if str, ok := v.(string); ok {
+			res = append(res, str)
+		}
+	}
+
+	if len(res) != len(publication) {
+		return nil, fmt.Errorf("the result slice does not match the length of the input slice")
+	}
+
+	return res, nil
 }

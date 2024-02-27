@@ -24,8 +24,8 @@ const originSystem = "http://cmdb.ft.com/systems/pac"
 const bookmark = "FB:kcwQnrEEnFpfSJ2PtiykK/JNh8oBozhIkA=="
 
 func TestSendMessage(t *testing.T) {
-	const expectedAnnotationsOutputBody = `{"payload":{"annotations":[{"id":"http://api.ft.com/things/2384fa7a-d514-3d6a-a0ea-3a711f66d0d8","prefLabel":"Apple","types":["http://www.ft.com/ontology/organisation/Organisation","http://www.ft.com/ontology/core/Thing","http://www.ft.com/ontology/concept/Concept"],"predicate":"mentions","relevanceScore":1,"confidenceScore":0.9932743203464962,"annotatedBy":"http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a","annotatedDate":"2016-01-20T19:43:47.314Z","annotatedDateEpoch":1453180597}],"lastModified":"%s","uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://pac.annotations-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
-	const expectedSuggestionsOutputBody = `{"payload":{"lastModified":"%s","suggestions":[{"id":"http://api.ft.com/things/2384fa7a-d514-3d6a-a0ea-3a711f66d0d8","prefLabel":"Apple","types":["http://www.ft.com/ontology/organisation/Organisation","http://www.ft.com/ontology/core/Thing","http://www.ft.com/ontology/concept/Concept"],"predicate":"mentions","relevanceScore":1,"confidenceScore":0.9932743203464962,"annotatedBy":"http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a","annotatedDate":"2016-01-20T19:43:47.314Z","annotatedDateEpoch":1453180597}],"uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://v2.suggestions-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
+	const expectedAnnotationsOutputBody = `{"payload":{"annotations":[{"id":"http://api.ft.com/things/2384fa7a-d514-3d6a-a0ea-3a711f66d0d8","prefLabel":"Apple","types":["http://www.ft.com/ontology/organisation/Organisation","http://www.ft.com/ontology/core/Thing","http://www.ft.com/ontology/concept/Concept"],"predicate":"mentions","relevanceScore":1,"confidenceScore":0.9932743203464962,"annotatedBy":"http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a","annotatedDate":"2016-01-20T19:43:47.314Z","annotatedDateEpoch":1453180597}],"lastModified":"%s","publication":["8e6c705e-1132-42a2-8db0-c295e29e8658"],"uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://pac.annotations-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
+	const expectedSuggestionsOutputBody = `{"payload":{"lastModified":"%s","publication":["8e6c705e-1132-42a2-8db0-c295e29e8658"],"suggestions":[{"id":"http://api.ft.com/things/2384fa7a-d514-3d6a-a0ea-3a711f66d0d8","prefLabel":"Apple","types":["http://www.ft.com/ontology/organisation/Organisation","http://www.ft.com/ontology/core/Thing","http://www.ft.com/ontology/concept/Concept"],"predicate":"mentions","relevanceScore":1,"confidenceScore":0.9932743203464962,"annotatedBy":"http://api.ft.com/things/0edd3c31-1fd0-4ef6-9230-8d545be3880a","annotatedDate":"2016-01-20T19:43:47.314Z","annotatedDateEpoch":1453180597}],"uuid":"3a636e78-5a47-11e7-9bc8-8055f264aa8b"},"contentUri":"http://v2.suggestions-rw-neo4j.svc.ft.com/annotations/3a636e78-5a47-11e7-9bc8-8055f264aa8b","lastModified":"%[1]s"}`
 
 	body, err := os.ReadFile("../exampleAnnotationsMessage.json")
 	if err != nil {
@@ -41,18 +41,21 @@ func TestSendMessage(t *testing.T) {
 		messageType     string
 		platformVersion string
 		expectedBody    string
+		publication     []string
 	}{
 		{
 			name:            "Annotations Message",
 			messageType:     "Annotations",
 			platformVersion: "pac",
 			expectedBody:    expectedAnnotationsOutputBody,
+			publication:     []string{"8e6c705e-1132-42a2-8db0-c295e29e8658"},
 		},
 		{
 			name:            "Suggestions Message",
 			messageType:     "Suggestions",
 			platformVersion: "v2",
 			expectedBody:    expectedSuggestionsOutputBody,
+			publication:     []string{"8e6c705e-1132-42a2-8db0-c295e29e8658"},
 		},
 	}
 
@@ -64,7 +67,7 @@ func TestSendMessage(t *testing.T) {
 				MessageType: test.messageType,
 			}
 
-			err = f.SendMessage(transactionID, originSystem, bookmark, test.platformVersion, inputMessage.UUID, inputMessage.Annotations)
+			err = f.SendMessage(transactionID, originSystem, bookmark, test.platformVersion, inputMessage.UUID, inputMessage.Annotations, test.publication)
 			if err != nil {
 				t.Error("Error sending message")
 			}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"github.com/Financial-Times/cm-annotations-ontology/validator"
 
 	logger "github.com/Financial-Times/go-logger/v2"
-	"github.com/Financial-Times/kafka-client-go/v3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -33,7 +31,6 @@ type HttpHandlerTestSuite struct {
 	annotations        []interface{}
 	annotationsService *mockAnnotationsService
 	forwarder          *mockForwarder
-	message            kafka.FTMessage
 	healthCheckHandler healthCheckHandler
 	originMap          map[string]string
 	lifecycleMap       map[string]string
@@ -41,6 +38,7 @@ type HttpHandlerTestSuite struct {
 	messageType        string
 	log                *logger.UPPLogger
 	validator          jsonValidator
+	publication        []string
 }
 
 func (suite *HttpHandlerTestSuite) SetupTest() {
@@ -49,7 +47,7 @@ func (suite *HttpHandlerTestSuite) SetupTest() {
 
 	suite.log = logger.NewUPPInfoLogger("annotations-rw")
 	var err error
-	suite.body, err = ioutil.ReadFile("examplePutBody.json")
+	suite.body, err = os.ReadFile("examplePutBody.json")
 	assert.NoError(suite.T(), err, "Unexpected error")
 
 	suite.annotations, err = decode(bytes.NewReader(suite.body))
@@ -72,7 +70,7 @@ func TestHttpHandlerTestSuite(t *testing.T) {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_Success() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(nil).Once()
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(nil).Once()
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.validator, suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -121,7 +119,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_WriteFailed() {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_ForwardingFailed() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations).Return(errors.New("forwarding failed"))
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(errors.New("forwarding failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.validator, suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
