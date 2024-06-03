@@ -40,7 +40,7 @@ func (suite *QueueHandlerTestSuite) SetupTest() {
 	os.Setenv("JSON_SCHEMA_NAME", "annotations-pac.json;annotations-next-video.json;annotations-v2.json")
 	suite.log = logger.NewUPPInfoLogger("annotations-rw")
 	suite.tid = "tid_sample"
-	suite.originSystem = "http://cmdb.ft.com/systems/pac"
+	suite.originSystem = "http://cmdb.ft.com/systems/ft-pink-annotations"
 	suite.bookmark = "FB:kcwQnrEEnFpfSJ2PtiykK/JNh8oBozhIkA=="
 	suite.forwarder = new(mockForwarder)
 	suite.headers = forwarder.CreateHeaders(suite.tid, suite.originSystem, suite.bookmark)
