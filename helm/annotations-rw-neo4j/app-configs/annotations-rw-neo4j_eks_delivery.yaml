@@ -11,4 +11,4 @@ env:
   PRODUCER_TOPIC: PostConceptAnnotations
   KAFKA_LAG_TOLERANCE: 100
   LIFECYCLE_CONFIG_PATH: annotation-config.json
-  JSON_SCHEMA_NAME: annotations-pac.json;annotations-next-video.json;annotations-sv.json
+  JSON_SCHEMA_NAME: annotations-pac.json;annotations-next-video.json;annotations-sv.json;annotations-fta.json
