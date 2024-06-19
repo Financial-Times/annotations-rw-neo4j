@@ -15,3 +15,4 @@ resources:
     memory: 256Mi
 env:
   JSON_SCHEMAS_PATH: "/schemas"
+  JSON_SCHEMA_NAME: "annotations-pac.json;annotations-next-video.json;annotations-sv.json;annotations-fta.json"

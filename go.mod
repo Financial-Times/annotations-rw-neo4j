@@ -1,9 +1,11 @@
 module github.com/Financial-Times/annotations-rw-neo4j/v4
 
-go 1.21
+go 1.22
+
+toolchain go1.22.0
 
 require (
-	github.com/Financial-Times/cm-annotations-ontology v1.0.4
+	github.com/Financial-Times/cm-annotations-ontology v1.0.6
 	github.com/Financial-Times/cm-neo4j-driver v1.1.0
 	github.com/Financial-Times/go-fthealth v0.0.0-20200609161010-4c53fbef65fa
 	github.com/Financial-Times/go-logger/v2 v2.0.1
@@ -20,13 +22,12 @@ require (
 )
 
 require (
-	github.com/Financial-Times/upp-content-validator-kit/v3 v3.0.2 // indirect
+	github.com/Financial-Times/upp-content-validator-kit/v3 v3.0.3 // indirect
 	github.com/Shopify/sarama v1.33.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.3.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230111030713-bf00bc1b83b6 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
