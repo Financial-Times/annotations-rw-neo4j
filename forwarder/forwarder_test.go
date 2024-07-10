@@ -20,7 +20,7 @@ type InputMessage struct {
 }
 
 const transactionID = "example-transaction-id"
-const originSystem = "http://cmdb.ft.com/systems/pac"
+const originSystem = "http://cmdb.ft.com/systems/ft-pink-annotations"
 const bookmark = "FB:kcwQnrEEnFpfSJ2PtiykK/JNh8oBozhIkA=="
 
 func TestSendMessage(t *testing.T) {

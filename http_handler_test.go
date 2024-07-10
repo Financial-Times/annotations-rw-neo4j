@@ -70,7 +70,7 @@ func TestHttpHandlerTestSuite(t *testing.T) {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_Success() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(nil).Once()
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/ft-pink-annotations", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(nil).Once()
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.validator, suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
@@ -119,7 +119,7 @@ func (suite *HttpHandlerTestSuite) TestPutHandler_WriteFailed() {
 
 func (suite *HttpHandlerTestSuite) TestPutHandler_ForwardingFailed() {
 	suite.annotationsService.On("Write", knownUUID, annotationLifecycle, platformVersion, []interface{}{}, suite.annotations).Return(bookmark, nil)
-	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/pac", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(errors.New("forwarding failed"))
+	suite.forwarder.On("SendMessage", suite.tid, "http://cmdb.ft.com/systems/ft-pink-annotations", bookmark, platformVersion, knownUUID, suite.annotations, suite.publication).Return(errors.New("forwarding failed"))
 	request := newRequest("PUT", fmt.Sprintf("/content/%s/annotations/%s", knownUUID, annotationLifecycle), "application/json", suite.body)
 	request.Header.Add("X-Request-Id", suite.tid)
 	handler := httpHandler{suite.validator, suite.annotationsService, suite.forwarder, suite.originMap, suite.lifecycleMap, suite.messageType, suite.log}
